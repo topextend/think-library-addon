@@ -12,8 +12,6 @@
 
 namespace think\admin;
 
-use think\admin\storage\LocalStorage;
-use think\admin\storage\QiniuStorage;
 use think\App;
 use think\Container;
 use think\Exception;
