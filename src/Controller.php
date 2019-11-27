@@ -18,6 +18,7 @@ use think\admin\helper\PageHelper;
 use think\admin\helper\QueryHelper;
 use think\admin\helper\SaveHelper;
 use think\admin\helper\TokenHelper;
+use think\admin\helper\ValidateHelper;
 use think\App;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;

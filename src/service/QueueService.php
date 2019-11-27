@@ -59,7 +59,7 @@ class QueueService extends Service
     public function initialize($code = 0): Service
     {
         if ($code > 0) {
-            $this->queue = $this->app->db->name('SystemQueue')->where(['code' => $this->code])->find();
+            $this->queue = $this->app->db->name('Queue')->where(['code' => $this->code])->find();
             if (empty($this->queue)) throw new \think\Exception("Queue {$code} Not found.");
             $this->code = $this->queue['code'];
             $this->title = $this->queue['title'];
@@ -89,7 +89,7 @@ class QueueService extends Service
     public function reset($wait = 0)
     {
         if (empty($this->queue)) throw new \think\Exception('Queue data cannot be empty!');
-        $this->app->db->name('SystemQueue')->where(['code' => $this->code])->failException(true)->update([
+        $this->app->db->name('Queue')->where(['code' => $this->code])->failException(true)->update([
             'exec_time' => time() + $wait, 'attempts' => $this->queue['attempts'] + 1, 'status' => '1',
         ]);
         return $this->initialize($this->code);
@@ -111,10 +111,10 @@ class QueueService extends Service
     public function register($title, $command, $later = 0, $data = [], $rscript = 1)
     {
         $map = [['title', '=', $title], ['status', 'in', ['1', '2']]];
-        if (empty($rscript) && $this->app->db->name('SystemQueue')->where($map)->count() > 0) {
+        if (empty($rscript) && $this->app->db->name('Queue')->where($map)->count() > 0) {
             throw new \think\Exception('该任务已经创建，请耐心等待处理完成！');
         }
-        $this->app->db->name('SystemQueue')->failException(true)->insert([
+        $this->app->db->name('Queue')->failException(true)->insert([
             'code'       => $this->code = CodeExtend::uniqidDate(16),
             'title'      => $title,
             'command'    => $command,
