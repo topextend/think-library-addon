@@ -12,7 +12,7 @@
 
 namespace think\admin;
 
-use think\admin\service\AuthService;
+use think\admin\service\AdminService;
 use think\middleware\SessionInit;
 use think\Request;
 use think\Service;
