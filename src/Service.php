@@ -39,7 +39,7 @@ abstract class Service
 
     /**
      * 服务初始化
-     * @return static
+     * @return $this
      */
     public function initialize(): Service
     {

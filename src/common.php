@@ -39,7 +39,7 @@ if (!function_exists('auth')) {
      */
     function auth($node)
     {
-        return AuthService::instance()->check($node);
+        return AdminService::instance()->check($node);
     }
 }
 
