@@ -82,7 +82,7 @@ class AdminService extends Service
     /**
      * 初始化用户权限
      * @param boolean $force 强刷权限
-     * @return AdminService
+     * @return $this
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -102,6 +102,16 @@ class AdminService extends Service
                 $this->app->session->set('user', $user);
             }
         }
+        return $this;
+    }
+
+    /**
+     * 清理节点缓存
+     * @return $this
+     */
+    public function clearCache()
+    {
+        $this->app->cache->delete('system_auth_node');
         return $this;
     }
 
