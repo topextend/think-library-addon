@@ -56,7 +56,7 @@ class QueueService extends Service
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function initialize($code = 0): Service
+    protected function initialize($code = 0): Service
     {
         if ($code > 0) {
             $this->queue = $this->app->db->name('Queue')->where(['code' => $this->code])->find();
