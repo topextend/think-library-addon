@@ -49,10 +49,11 @@ class Install extends Command
      */
     protected $bind = [
         'admin'  => [
-            'rules'  => [
-                'think',
-                'app/admin',
-            ],
+            'rules'  => ['think', 'app/admin'],
+            'ignore' => [],
+        ],
+        'wechat' => [
+            'rules'  => ['app/wechat'],
             'ignore' => [],
         ],
         'static' => [

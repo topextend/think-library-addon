@@ -20,44 +20,61 @@ namespace think\admin\extend;
 class HttpExtend
 {
     /**
-     * 以get模拟网络请求
-     * @param string $url HTTP请求地址
+     * 以GET模拟网络请求
+     * @param string $location HTTP请求地址
      * @param array|string $query GET请求参数
      * @param array $options CURL请求参数
      * @return boolean|string
      */
-    public static function get($url, $query = [], $options = [])
+    public static function get($location, $query = [], $options = [])
     {
         $options['query'] = $query;
-        return self::request('get', $url, $options);
+        return self::request('get', $location, $options);
     }
 
     /**
-     * 以post模拟网络请求
-     * @param string $url HTTP请求地址
+     * 以 POST 模拟网络请求
+     * @param string $location HTTP请求地址
      * @param array|string $data POST请求数据
      * @param array $options CURL请求参数
      * @return boolean|string
      */
-    public static function post($url, $data = [], $options = [])
+    public static function post($location, $data = [], $options = [])
     {
         $options['data'] = $data;
-        return self::request('post', $url, $options);
+        return self::request('post', $location, $options);
+    }
+
+    /**
+     * 以 FormData 模拟网络请求
+     * @param string $url 模拟请求地址
+     * @param array $data 模拟请求参数数据
+     * @param array $file 提交文件 [field,name,content]
+     * @param array $header 请求头部信息，默认带 Content-type
+     * @param string $method 模拟请求的方式 [GET,POST,PUT]
+     * @param boolean $returnHeader 是否返回头部信息
+     * @return boolean|string
+     */
+    public static function submit($url, array $data = [], array $file = [], array $header = [], $method = 'POST', $returnHeader = true)
+    {
+        list($boundary, $content) = self::buildFormData($data, $file);
+        $header[] = "Content-type:multipart/form-data;boundary={$boundary}";
+        return self::request($method, $url, ['data' => $content, 'returnHeader' => $returnHeader, 'headers' => $header]);
     }
 
     /**
      * CURL模拟网络请求
      * @param string $method 请求方法
-     * @param string $url 请求方法
-     * @param array $options 请求参数[headers,data]
+     * @param string $location 请求地址
+     * @param array $options 请求参数[headers,data,cookie,cookie_file,timeout,returnHeader]
      * @return boolean|string
      */
-    public static function request($method, $url, $options = [])
+    public static function request($method, $location, $options = [])
     {
         $curl = curl_init();
         // GET 参数设置
         if (!empty($options['query'])) {
-            $url .= (stripos($url, '?') !== false ? '&' : '?') . http_build_query($options['query']);
+            $location .= (stripos($location, '?') !== false ? '&' : '?') . http_build_query($options['query']);
         }
         // 浏览器代理设置
         curl_setopt($curl, CURLOPT_USERAGENT, self::getUserAgent());
@@ -73,9 +90,11 @@ class HttpExtend
             curl_setopt($curl, CURLOPT_COOKIEJAR, $options['cookie_file']);
             curl_setopt($curl, CURLOPT_COOKIEFILE, $options['cookie_file']);
         }
-        // POST 数据设置
-        if (strtolower($method) === 'post') {
-            curl_setopt($curl, CURLOPT_POST, true);
+        // 设置请求方式
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+        if (strtolower($method) === 'head') {
+            curl_setopt($curl, CURLOPT_NOBODY, 1);
+        } elseif (isset($options['data'])) {
             curl_setopt($curl, CURLOPT_POSTFIELDS, self::buildQueryData($options['data']));
         }
         // 请求超时设置
@@ -84,8 +103,13 @@ class HttpExtend
         } else {
             curl_setopt($curl, CURLOPT_TIMEOUT, 60);
         }
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_HEADER, false);
+        if (empty($options['returnHeader'])) {
+            curl_setopt($curl, CURLOPT_HEADER, false);
+        } else {
+            curl_setopt($curl, CURLOPT_HEADER, true);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        }
+        curl_setopt($curl, CURLOPT_URL, $location);
         curl_setopt($curl, CURLOPT_AUTOREFERER, true);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -97,7 +121,7 @@ class HttpExtend
     }
 
     /**
-     * POST数据过滤处理
+     * 对 POST 数据过滤处理
      * @param array $data 需要处理的数据
      * @param boolean $build 是否编译数据
      * @return array|string
@@ -105,16 +129,40 @@ class HttpExtend
     private static function buildQueryData($data, $build = true)
     {
         if (!is_array($data)) return $data;
-        foreach ($data as $key => $value) if (is_object($value) && $value instanceof \CURLFile) {
-            $build = false;
-        } elseif (is_string($value) && class_exists('CURLFile', false) && stripos($value, '@') === 0) {
-            if (($filename = realpath(trim($value, '@'))) && file_exists($filename)) {
-                list($build, $data[$key]) = [false, new \CURLFile($filename)];
-            }
+        foreach ($data as $key => $value) {
+            if (is_string($value) && stripos($value, '@') === 0 && class_exists('CURLFile')) {
+                if (file_exists($filename = realpath(ltrim($value, '@')))) {
+                    list($build, $data[$key]) = [false, new \CURLFile($filename)];
+                }
+            } elseif ($value instanceof \CURLFile) $build = false;
         }
         return $build ? http_build_query($data) : $data;
     }
 
+    /**
+     * 生成 FormData 格式数据内容
+     * @param array $data 表单提交的数据
+     * @param array $file 表单上传的文件
+     * @return array
+     */
+    private static function buildFormData(array $data = [], array $file = [])
+    {
+        list($line, $boundary) = [[], CodeExtend::random(18)];
+        foreach ($data as $key => $value) {
+            $line[] = "--{$boundary}";
+            $line[] = "Content-Disposition: form-data; name=\"{$key}\"";
+            $line[] = "";
+            $line[] = $value;
+        }
+        if (is_array($file) && isset($file['field']) && isset($file['name'])) {
+            $line[] = "--{$boundary}";
+            $line[] = "Content-Disposition: form-data; name=\"{$file['field']}\"; filename=\"{$file['name']}\"";
+            $line[] = "";
+            $line[] = $file['content'];
+        }
+        $line[] = "--{$boundary}--";
+        return [$boundary, join("\r\n", $line)];
+    }
 
     /**
      * 获取浏览器代理信息

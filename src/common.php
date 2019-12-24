@@ -15,6 +15,7 @@ use think\admin\service\AdminService;
 use think\admin\service\QueueService;
 use think\admin\service\SystemService;
 use think\admin\service\TokenService;
+use think\admin\Storage;
 use think\db\Query;
 
 if (!function_exists('p')) {
@@ -29,7 +30,6 @@ if (!function_exists('p')) {
         SystemService::instance()->putDebug($data, $new, $file);
     }
 }
-
 if (!function_exists('auth')) {
     /**
      * 访问权限检查
@@ -42,7 +42,6 @@ if (!function_exists('auth')) {
         return AdminService::instance()->check($node);
     }
 }
-
 if (!function_exists('sysconf')) {
     /**
      * 获取或配置系统参数
@@ -62,7 +61,25 @@ if (!function_exists('sysconf')) {
         }
     }
 }
-
+if (!function_exists('sysdata')) {
+    /**
+     * JSON 数据读取与存储
+     * @param string $name 数据名称
+     * @param mixed $value 数据内容
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    function sysdata($name, $value = null)
+    {
+        if (is_null($value)) {
+            return SystemService::instance()->getData($name);
+        } else {
+            return SystemService::instance()->setData($name, $value);
+        }
+    }
+}
 if (!function_exists('sysqueue')) {
     /**
      * 注册异步处理任务
@@ -82,40 +99,6 @@ if (!function_exists('sysqueue')) {
         return QueueService::instance()->register($title, $command, $later, $data, $rscript);
     }
 }
-
-if (!function_exists('sysdata')) {
-    /**
-     * JSON 数据读取与存储
-     * @param string $name 数据名称
-     * @param mixed $value 数据内容
-     * @return mixed
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
-     */
-    function sysdata($name, $value = null)
-    {
-        if (is_null($value)) {
-            return SystemService::instance()->get($name);
-        } else {
-            return SystemService::instance()->set($name, $value);
-        }
-    }
-}
-
-if (!function_exists('sysoplog')) {
-    /**
-     * 写入系统日志
-     * @param string $action 日志行为
-     * @param string $content 日志内容
-     * @return boolean
-     */
-    function sysoplog($action, $content)
-    {
-        return SystemService::instance()->setOplog($action, $content);
-    }
-}
-
 if (!function_exists('systoken')) {
     /**
      * 生成 CSRF-TOKEN 参数
@@ -128,7 +111,18 @@ if (!function_exists('systoken')) {
         return isset($result['token']) ? $result['token'] : '';
     }
 }
-
+if (!function_exists('sysoplog')) {
+    /**
+     * 写入系统日志
+     * @param string $action 日志行为
+     * @param string $content 日志内容
+     * @return boolean
+     */
+    function sysoplog($action, $content)
+    {
+        return SystemService::instance()->setOplog($action, $content);
+    }
+}
 if (!function_exists('encode')) {
     /**
      * 加密 UTF8 字符串
@@ -142,7 +136,6 @@ if (!function_exists('encode')) {
         return $chars;
     }
 }
-
 if (!function_exists('decode')) {
     /**
      * 解密 UTF8 字符串
@@ -158,7 +151,6 @@ if (!function_exists('decode')) {
         return iconv('GBK//TRANSLIT', 'UTF-8', $chars);
     }
 }
-
 if (!function_exists('http_get')) {
     /**
      * 以get模拟网络请求
@@ -172,7 +164,6 @@ if (!function_exists('http_get')) {
         return HttpExtend::get($url, $query, $options);
     }
 }
-
 if (!function_exists('http_post')) {
     /**
      * 以post模拟网络请求
@@ -186,7 +177,6 @@ if (!function_exists('http_post')) {
         return HttpExtend::post($url, $data, $options);
     }
 }
-
 if (!function_exists('data_save')) {
     /**
      * 数据增量保存
@@ -204,7 +194,6 @@ if (!function_exists('data_save')) {
         return SystemService::instance()->save($dbQuery, $data, $key, $where);
     }
 }
-
 if (!function_exists('format_datetime')) {
     /**
      * 日期格式标准输出
@@ -212,7 +201,7 @@ if (!function_exists('format_datetime')) {
      * @param string $format 输出格式
      * @return false|string
      */
-    function format_datetime($datetime, $format = 'Y年m月d日 H:i:s')
+    function format_datetime($datetime, $format = 'Y年m月d日 H:i:s'): string
     {
         if (empty($datetime)) return '-';
         if (is_numeric($datetime)) {
@@ -222,7 +211,6 @@ if (!function_exists('format_datetime')) {
         }
     }
 }
-
 if (!function_exists('enbase64url')) {
     /**
      * Base64安全URL编码
@@ -243,5 +231,19 @@ if (!function_exists('debase64url')) {
     function debase64url(string $string): string
     {
         return base64_decode(str_pad(strtr($string, '-_', '+/'), strlen($string) % 4, '=', STR_PAD_RIGHT));
+    }
+}
+if (!function_exists('down_file')) {
+    /**
+     * 下载远程文件到本地
+     * @param string $source 远程文件地址
+     * @param boolean $force 是否强制重新下载
+     * @param integer $expire 强制本地存储时间
+     * @return string
+     */
+    function down_file($source, $force = false, $expire = 0): string
+    {
+        $result = Storage::down($source, $force, $expire);
+        return isset($result['url']) ? $result['url'] : $source;
     }
 }

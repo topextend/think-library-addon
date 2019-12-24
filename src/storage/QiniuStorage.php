@@ -28,8 +28,8 @@ class QiniuStorage extends Storage
     private $secretKey;
 
     /**
-     * 存储引擎初始化
-     * @return QiniuStorage
+     * 初始化入口
+     * @return $this
      * @throws \think\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
@@ -39,9 +39,9 @@ class QiniuStorage extends Storage
     {
         // 读取配置文件
         $this->bucket = sysconf('storage.qiniu_bucket');
+        $this->domain = sysconf('storage.qiniu_http_domain');
         $this->accessKey = sysconf('storage.qiniu_access_key');
         $this->secretKey = sysconf('storage.qiniu_secret_key');
-        $this->domain = strtolower(sysconf('storage.qiniu_http_domain'));
         // 计算链接前缀
         $type = strtolower(sysconf('storage.qiniu_http_protocol'));
         if ($type === 'auto') $this->prefix = "//{$this->domain}/";
@@ -49,6 +49,20 @@ class QiniuStorage extends Storage
         elseif ($type === 'https') $this->prefix = "https://{$this->domain}/";
         else throw new \think\Exception('未配置七牛云URL域名哦');
         return $this;
+    }
+
+    /**
+     * 获取当前实例对象
+     * @param null $name
+     * @return static
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public static function instance($name = null): Storage
+    {
+        return parent::instance('qiniu');
     }
 
     /**
@@ -65,21 +79,10 @@ class QiniuStorage extends Storage
     public function set($name, $file, $safe = false)
     {
         $token = $this->buildUploadToken($name);
-        list($attrs, $frontier) = [[], uniqid()];
-        foreach (['key' => $name, 'token' => $token, 'fileName' => $name] as $key => $value) {
-            $attrs[] = "--{$frontier}";
-            $attrs[] = "Content-Disposition:form-data; name=\"{$key}\"";
-            $attrs[] = "";
-            $attrs[] = $value;
-        }
-        $attrs[] = "--{$frontier}";
-        $attrs[] = "Content-Disposition:form-data; name=\"file\"; filename=\"{$name}\"";
-        $attrs[] = "";
-        $attrs[] = $file;
-        $attrs[] = "--{$frontier}--";
-        return json_decode(HttpExtend::post($this->upload(), join("\r\n", $attrs), [
-            'headers' => ["Content-type:multipart/form-data;boundary={$frontier}"],
-        ]), true);
+        $data = ['key' => $name, 'token' => $token, 'fileName' => $name];
+        $file = ['field' => "file", 'name' => $name, 'content' => $file];
+        $result = HttpExtend::submit($this->upload(), $data, $file, [], 'POST', false);
+        return json_decode($result, true);
     }
 
 
@@ -130,7 +133,7 @@ class QiniuStorage extends Storage
      */
     public function url($name, $safe = false)
     {
-        return "{$this->prefix}/{$name}";
+        return "{$this->prefix}{$name}";
     }
 
     /**
@@ -152,11 +155,9 @@ class QiniuStorage extends Storage
      */
     public function info($name, $safe = false)
     {
-        list($EncodedEntryURI, $AccessToken) = $this->getAccessToken($name);
-        $data = json_decode(HttpExtend::post("http://rs.qiniu.com/stat/{$EncodedEntryURI}", [], [
-            'headers' => ["Authorization:QBox {$AccessToken}"],
-        ]), true);
-        return isset($data['md5']) ? ['file' => $name, 'url' => $this->url($name, $safe), 'hash' => $data['md5'], 'key' => $name] : [];
+        list($entry, $token) = $this->getAccessToken($name);
+        $data = json_decode(HttpExtend::get("http://rs.qiniu.com/stat/{$entry}", [], ['headers' => ["Authorization: QBox {$token}"]]), true);
+        return isset($data['md5']) ? ['file' => $name, 'url' => $this->url($name, $safe), 'key' => $name] : [];
     }
 
     /**
@@ -196,7 +197,9 @@ class QiniuStorage extends Storage
     {
         $policy = $this->safeBase64(json_encode([
             "deadline"   => time() + $expires, "scope" => is_null($name) ? $this->bucket : "{$this->bucket}:{$name}",
-            'returnBody' => json_encode(['uploaded' => true, 'filename' => '$(key)', 'url' => "{$this->prefix}/$(key)"], JSON_UNESCAPED_UNICODE),
+            'returnBody' => json_encode([
+                'uploaded' => true, 'filename' => '$(key)', 'file' => $name, 'url' => "{$this->prefix}$(key)", 'key' => $name,
+            ], JSON_UNESCAPED_UNICODE),
         ]));
         return "{$this->accessKey}:{$this->safeBase64(hash_hmac('sha1', $policy, $this->secretKey, true))}:{$policy}";
     }
@@ -217,9 +220,10 @@ class QiniuStorage extends Storage
      * @param string $type 操作类型
      * @return array
      */
-    private function getAccessToken($name, $type = 'state')
+    private function getAccessToken($name, $type = 'stat')
     {
-        $EncodedEntryURI = $this->safeBase64("{$this->bucket}:{$name}");
-        return [$EncodedEntryURI, "{$this->accessKey}:{$this->safeBase64(hash_hmac('sha1', "/{$type}/{$EncodedEntryURI}\n", $this->secretKey, true))}"];
+        $entry = $this->safeBase64("{$this->bucket}:{$name}");
+        $sign = hash_hmac('sha1', "/{$type}/{$entry}\n", $this->secretKey, true);
+        return [$entry, "{$this->accessKey}:{$this->safeBase64($sign)}"];
     }
 }
