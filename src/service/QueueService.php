@@ -60,7 +60,7 @@ class QueueService extends Service
     {
         if (!empty($code)) {
             $this->code = $code;
-            $this->queue = $this->app->db->name('SystemQueue')->where(['code' => $this->code])->find();
+            $this->queue = $this->app->db->name('Queue')->where(['code' => $this->code])->find();
             if (empty($this->queue)) {
                 $this->app->log->error("Qeueu initialize failed, Queue {$code} not found.");
                 throw new \think\admin\Exception("Qeueu initialize failed, Queue {$code} not found.");
@@ -97,7 +97,7 @@ class QueueService extends Service
             throw new \think\admin\Exception("Qeueu reset failed, Queue {$this->code} data cannot be empty!");
         }
         $map = ['code' => $this->code];
-        $this->app->db->name('SystemQueue')->where($map)->strict(false)->failException(true)->update([
+        $this->app->db->name('Queue')->where($map)->strict(false)->failException(true)->update([
             'exec_pid' => '0', 'exec_time' => time() + $wait, 'status' => '1',
         ]);
         return $this->initialize($this->code);
@@ -133,10 +133,10 @@ class QueueService extends Service
     public function register($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
     {
         $map = [['title', '=', $title], ['status', 'in', ['1', '2']]];
-        if (empty($rscript) && ($queue = $this->app->db->name('SystemQueue')->where($map)->find())) {
+        if (empty($rscript) && ($queue = $this->app->db->name('Queue')->where($map)->find())) {
             throw new \think\admin\Exception(lang('think_library_queue_exist'), 0, $queue['code']);
         }
-        $this->app->db->name('SystemQueue')->strict(false)->failException(true)->insert([
+        $this->app->db->name('Queue')->strict(false)->failException(true)->insert([
             'code'       => $this->code = CodeExtend::uniqidDate(16, 'Q'),
             'title'      => $title,
             'command'    => $command,

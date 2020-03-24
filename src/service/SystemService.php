@@ -46,7 +46,7 @@ class SystemService extends Service
         } else {
             $this->data = [];
             $data = ['name' => $field, 'value' => $value, 'type' => $type];
-            $this->save('SystemConfig', $data, 'name', ['type' => $type]);
+            $this->save('Config', $data, 'name', ['type' => $type]);
         }
         return $this;
     }
@@ -62,7 +62,7 @@ class SystemService extends Service
     public function get($name)
     {
         list($type, $field, $outer) = $this->parse($name);
-        if (empty($this->data)) foreach ($this->app->db->name('SystemConfig')->select() as $vo) {
+        if (empty($this->data)) foreach ($this->app->db->name('Config')->select() as $vo) {
             $this->data[$vo['type']][$vo['name']] = $vo['value'];
         }
         if (empty($name)) {
@@ -130,7 +130,7 @@ class SystemService extends Service
     public function setData($name, $value)
     {
         $data = ['name' => $name, 'value' => serialize($value)];
-        return $this->save('SystemData', $data, 'name');
+        return $this->save('Data', $data, 'name');
     }
 
     /**
@@ -142,7 +142,7 @@ class SystemService extends Service
     public function getData($name, $default = [])
     {
         try {
-            $value = $this->app->db->name('SystemData')->where(['name' => $name])->value('value', null);
+            $value = $this->app->db->name('Data')->where(['name' => $name])->value('value', null);
             return is_null($value) ? $default : unserialize($value);
         } catch (\Exception $e) {
             return $default;
@@ -157,7 +157,7 @@ class SystemService extends Service
      */
     public function setOplog($action, $content)
     {
-        return $this->app->db->name('SystemOplog')->insert([
+        return $this->app->db->name('Oplog')->insert([
             'node'     => NodeService::instance()->getCurrent(),
             'action'   => $action, 'content' => $content,
             'geoip'    => $this->app->request->isCli() ? '127.0.0.1' : $this->app->request->ip(),

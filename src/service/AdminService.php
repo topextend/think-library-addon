@@ -109,11 +109,11 @@ class AdminService extends Service
     {
         if ($force) $this->app->cache->delete('system_auth_node');
         if (($uid = $this->app->session->get('user.id'))) {
-            $user = $this->app->db->name('SystemUser')->where(['id' => $uid])->find();
+            $user = $this->app->db->name('User')->where(['id' => $uid])->find();
             if (($aids = $user['authorize'])) {
                 $where = [['status', '=', '1'], ['id', 'in', explode(',', $aids)]];
-                $subsql = $this->app->db->name('SystemAuth')->field('id')->where($where)->buildSql();
-                $user['nodes'] = array_unique($this->app->db->name('SystemAuthNode')->whereRaw("auth in {$subsql}")->column('node'));
+                $subsql = $this->app->db->name('Auth')->field('id')->where($where)->buildSql();
+                $user['nodes'] = array_unique($this->app->db->name('AuthNode')->whereRaw("auth in {$subsql}")->column('node'));
                 $this->app->session->set('user', $user);
             } else {
                 $user['nodes'] = [];

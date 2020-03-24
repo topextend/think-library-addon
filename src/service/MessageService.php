@@ -65,7 +65,7 @@ class MessageService extends Service
      */
     protected function initialize()
     {
-        $this->table = 'SystemMessageHistory';
+        $this->table = 'MessageHistory';
         $this->china_username = sysconf('sms_zt.china_username');
         $this->china_password = sysconf('sms_zt.china_password');
         $this->globe_username = sysconf('sms_zt.globe_username');

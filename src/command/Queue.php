@@ -28,7 +28,7 @@ abstract class Queue extends Command
      * 绑定数据表
      * @var string
      */
-    protected $table = 'SystemQueue';
+    protected $table = 'Queue';
 
     /**
      * 进程服务对象
