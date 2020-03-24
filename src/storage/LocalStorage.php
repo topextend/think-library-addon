@@ -1,13 +1,16 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 namespace think\admin\storage;
@@ -21,26 +24,42 @@ use think\admin\Storage;
  */
 class LocalStorage extends Storage
 {
+
     /**
      * 初始化入口
-     * @return LocalStorage
+     * @return Storage
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function initialize(): Storage
+    protected function initialize()
     {
-        $this->prefix = rtrim($this->app->getRootPath(), '\\/');
-        return $this;
+        // 计算链接前缀
+        $type = strtolower(sysconf('storage.local_http_protocol'));
+        if ($type === 'path') {
+            $file = $this->app->request->baseFile(false);
+            $this->prefix = trim(dirname($file), '\\/');
+        } else {
+            $this->prefix = dirname($this->app->request->basefile(true));
+            list(, $domain) = explode('://', strtr($this->prefix, '\\', '/'));
+            if ($type === 'auto') $this->prefix = "//{$domain}";
+            elseif ($type === 'http') $this->prefix = "http://{$domain}";
+            elseif ($type === 'https') $this->prefix = "https://{$domain}";
+        }
+        // 初始化配置并返回当前实例
+        return parent::initialize();
     }
 
     /**
      * 获取当前实例对象
      * @param null $name
-     * @return static
+     * @return AliossStorage|LocalStorage|QiniuStorage
      * @throws \think\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public static function instance($name = null): Storage
+    public static function instance($name = null)
     {
         return parent::instance('local');
     }
@@ -50,15 +69,16 @@ class LocalStorage extends Storage
      * @param string $name 文件名称
      * @param string $file 文件内容
      * @param boolean $safe 安全模式
+     * @param string $attname 下载名称
      * @return array
      */
-    public function set($name, $file, $safe = false)
+    public function set($name, $file, $safe = false, $attname = null)
     {
         try {
             $path = $this->path($name, $safe);
             file_exists(dirname($path)) || mkdir(dirname($path), 0755, true);
             if (file_put_contents($path, $file)) {
-                return $this->info($name, $safe);
+                return $this->info($name, $safe, $attname);
             }
         } catch (\Exception $e) {
             return [];
@@ -107,13 +127,12 @@ class LocalStorage extends Storage
      * 获取文件当前URL地址
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
+     * @param string $attname 下载名称
      * @return string|null
      */
-    public function url($name, $safe = false)
+    public function url($name, $safe = false, $attname = null)
     {
-        if ($safe) return $name;
-        $root = rtrim(dirname($this->app->request->basefile(true)), '\\/');
-        return "{$root}/upload/{$name}";
+        return $safe ? $name : "{$this->prefix}/upload/{$this->delSuffix($name)}{$this->getSuffix($attname)}";
     }
 
     /**
@@ -124,20 +143,23 @@ class LocalStorage extends Storage
      */
     public function path($name, $safe = false)
     {
+        $root = $this->app->getRootPath();
         $path = $safe ? 'safefile' : 'public/upload';
-        return str_replace('\\', '/', "{$this->prefix}/{$path}/{$name}");
+        return strtr("{$root}{$path}/{$this->delSuffix($name)}", '\\', '/');
     }
 
     /**
      * 获取文件存储信息
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
+     * @param string $attname 下载名称
      * @return array
      */
-    public function info($name, $safe = false)
+    public function info($name, $safe = false, $attname = null)
     {
         return $this->has($name, $safe) ? [
-            'file' => $this->path($name, $safe), 'url' => $this->url($name, $safe), 'key' => "upload/{$name}",
+            'url' => $this->url($name, $safe, $attname),
+            'key' => "upload/{$name}", 'file' => $this->path($name, $safe),
         ] : [];
     }
 
@@ -147,7 +169,7 @@ class LocalStorage extends Storage
      */
     public function upload()
     {
-        return url('@admin/api.upload/file', [], false, true)->build();
+        return url('@admin/api.upload/file')->build();
     }
 
 }

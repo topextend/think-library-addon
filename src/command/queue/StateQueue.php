@@ -10,41 +10,39 @@
 // | gitee 代码仓库：https://github.com/topextend/think-library
 // +----------------------------------------------------------------------
 
-namespace think\admin\queue;
+namespace think\admin\command\queue;
 
-use think\admin\service\ProcessService;
-use think\console\Command;
+use think\admin\command\Queue;
 use think\console\Input;
 use think\console\Output;
 
 /**
- * 查询正在执行的进程PID
- * Class QueryQueue
- * @package think\admin\queue
+ * 查看任务监听主进程状态
+ * Class StateQueue
+ * @package think\admin\command\queue
  */
-class QueryQueue extends Command
+class StateQueue extends Queue
 {
     /**
      * 指令属性配置
      */
     protected function configure()
     {
-        $this->setName('xtask:query')->setDescription('[控制]查询正在运行的进程');
+        $this->setName('xtask:state')->setDescription('Check listening main process status');
     }
 
     /**
-     * 执行相关进程查询
-     * @param Input $input 输入对象
-     * @param Output $output 输出对象
+     * 指令执行状态
+     * @param Input $input
+     * @param Output $output
      */
     protected function execute(Input $input, Output $output)
     {
-        $service = ProcessService::instance();
-        $result = $service->query($service->think("xtask:"));
-        if (count($result) > 0) foreach ($result as $item) {
-            $output->writeln("{$item['pid']}\t{$item['cmd']}");
+        $command = $this->process->think('xtask:listen');
+        if (count($result = $this->process->query($command)) > 0) {
+            $output->info("Listening for main process {$result[0]['pid']} running");
         } else {
-            $output->writeln('没有查询到相关任务进程');
+            $output->warning("The Listening main process is not running");
         }
     }
 }

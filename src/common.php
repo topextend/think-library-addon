@@ -1,13 +1,16 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 use think\admin\extend\HttpExtend;
@@ -87,16 +90,17 @@ if (!function_exists('sysqueue')) {
      * @param string $command 执行内容
      * @param integer $later 延时执行时间
      * @param array $data 任务附加数据
-     * @param integer $rscript 任务多开
-     * @return QueueService
-     * @throws \think\Exception
+     * @param integer $rscript 任务类型(0单例,1多例)
+     * @param integer $loops 循环等待时间
+     * @return string
+     * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    function sysqueue($title, $command, $later = 0, $data = [], $rscript = 1)
+    function sysqueue($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
     {
-        return QueueService::instance()->register($title, $command, $later, $data, $rscript);
+        return QueueService::instance()->register($title, $command, $later, $data, $rscript, $loops)->code;
     }
 }
 if (!function_exists('systoken')) {
@@ -201,7 +205,7 @@ if (!function_exists('format_datetime')) {
      * @param string $format 输出格式
      * @return false|string
      */
-    function format_datetime($datetime, $format = 'Y年m月d日 H:i:s'): string
+    function format_datetime($datetime, $format = 'Y年m月d日 H:i:s')
     {
         if (empty($datetime)) return '-';
         if (is_numeric($datetime)) {
@@ -217,7 +221,7 @@ if (!function_exists('enbase64url')) {
      * @param string $string
      * @return string
      */
-    function enbase64url(string $string): string
+    function enbase64url(string $string)
     {
         return rtrim(strtr(base64_encode($string), '+/', '-_'), '=');
     }
@@ -228,7 +232,7 @@ if (!function_exists('debase64url')) {
      * @param string $string
      * @return string
      */
-    function debase64url(string $string): string
+    function debase64url(string $string)
     {
         return base64_decode(str_pad(strtr($string, '-_', '+/'), strlen($string) % 4, '=', STR_PAD_RIGHT));
     }
@@ -241,9 +245,26 @@ if (!function_exists('down_file')) {
      * @param integer $expire 强制本地存储时间
      * @return string
      */
-    function down_file($source, $force = false, $expire = 0): string
+    function down_file($source, $force = false, $expire = 0)
     {
         $result = Storage::down($source, $force, $expire);
         return isset($result['url']) ? $result['url'] : $source;
+    }
+}
+if (!function_exists('format_bytes')) {
+    /**
+     * 文件字节单位转换
+     * @param integer $size
+     * @return string
+     */
+    function format_bytes($size)
+    {
+        if (is_numeric($size)) {
+            $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+            for ($i = 0; $size >= 1024 && $i < 4; $i++) $size /= 1024;
+            return round($size, 2) . ' ' . $units[$i];
+        } else {
+            return $size;
+        }
     }
 }

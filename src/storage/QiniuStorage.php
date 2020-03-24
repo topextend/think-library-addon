@@ -1,13 +1,16 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 namespace think\admin\storage;
@@ -29,13 +32,13 @@ class QiniuStorage extends Storage
 
     /**
      * 初始化入口
-     * @return $this
-     * @throws \think\Exception
+     * @return Storage
+     * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function initialize(): Storage
+    protected function initialize()
     {
         // 读取配置文件
         $this->bucket = sysconf('storage.qiniu_bucket');
@@ -44,23 +47,24 @@ class QiniuStorage extends Storage
         $this->secretKey = sysconf('storage.qiniu_secret_key');
         // 计算链接前缀
         $type = strtolower(sysconf('storage.qiniu_http_protocol'));
-        if ($type === 'auto') $this->prefix = "//{$this->domain}/";
-        elseif ($type === 'http') $this->prefix = "http://{$this->domain}/";
-        elseif ($type === 'https') $this->prefix = "https://{$this->domain}/";
-        else throw new \think\Exception('未配置七牛云URL域名哦');
-        return $this;
+        if ($type === 'auto') $this->prefix = "//{$this->domain}";
+        elseif ($type === 'http') $this->prefix = "http://{$this->domain}";
+        elseif ($type === 'https') $this->prefix = "https://{$this->domain}";
+        else throw new \think\admin\Exception('未配置七牛云URL域名哦');
+        // 初始化配置并返回当前实例
+        return parent::initialize();
     }
 
     /**
      * 获取当前实例对象
      * @param null $name
-     * @return static
+     * @return AliossStorage|LocalStorage|QiniuStorage
      * @throws \think\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public static function instance($name = null): Storage
+    public static function instance($name = null)
     {
         return parent::instance('qiniu');
     }
@@ -70,15 +74,16 @@ class QiniuStorage extends Storage
      * @param string $name 文件名称
      * @param string $file 文件内容
      * @param boolean $safe 安全模式
+     * @param string $attname 下载名称
      * @return array
      * @throws \think\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function set($name, $file, $safe = false)
+    public function set($name, $file, $safe = false, $attname = null)
     {
-        $token = $this->buildUploadToken($name);
+        $token = $this->buildUploadToken($name, 3600, $attname);
         $data = ['key' => $name, 'token' => $token, 'fileName' => $name];
         $file = ['field' => "file", 'name' => $name, 'content' => $file];
         $result = HttpExtend::submit($this->upload(), $data, $file, [], 'POST', false);
@@ -129,11 +134,12 @@ class QiniuStorage extends Storage
      * 获取文件当前URL地址
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
+     * @param string $attname 下载名称
      * @return string
      */
-    public function url($name, $safe = false)
+    public function url($name, $safe = false, $attname = null)
     {
-        return "{$this->prefix}{$name}";
+        return "{$this->prefix}/{$this->delSuffix($name)}{$this->getSuffix($attname)}";
     }
 
     /**
@@ -151,13 +157,14 @@ class QiniuStorage extends Storage
      * 获取文件存储信息
      * @param string $name 文件名称
      * @param boolean $safe 安全模式
+     * @param string $attname 下载名称
      * @return array
      */
-    public function info($name, $safe = false)
+    public function info($name, $safe = false, $attname = null)
     {
         list($entry, $token) = $this->getAccessToken($name);
         $data = json_decode(HttpExtend::get("http://rs.qiniu.com/stat/{$entry}", [], ['headers' => ["Authorization: QBox {$token}"]]), true);
-        return isset($data['md5']) ? ['file' => $name, 'url' => $this->url($name, $safe), 'key' => $name] : [];
+        return isset($data['md5']) ? ['file' => $name, 'url' => $this->url($name, $safe, $attname), 'key' => $name] : [];
     }
 
     /**
@@ -191,14 +198,15 @@ class QiniuStorage extends Storage
      * 获取文件上传令牌
      * @param string $name 文件名称
      * @param integer $expires 有效时间
+     * @param string $attname 下载名称
      * @return string
      */
-    public function buildUploadToken($name = null, $expires = 3600)
+    public function buildUploadToken($name = null, $expires = 3600, $attname = null)
     {
         $policy = $this->safeBase64(json_encode([
             "deadline"   => time() + $expires, "scope" => is_null($name) ? $this->bucket : "{$this->bucket}:{$name}",
             'returnBody' => json_encode([
-                'uploaded' => true, 'filename' => '$(key)', 'file' => $name, 'url' => "{$this->prefix}$(key)", 'key' => $name,
+                'uploaded' => true, 'filename' => '$(key)', 'url' => "{$this->prefix}/$(key){$this->getSuffix($attname)}", 'key' => $name, 'file' => $name,
             ], JSON_UNESCAPED_UNICODE),
         ]));
         return "{$this->accessKey}:{$this->safeBase64(hash_hmac('sha1', $policy, $this->secretKey, true))}:{$policy}";

@@ -1,18 +1,22 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 namespace think\admin\helper;
 
 use think\admin\Helper;
+use think\Validate;
 
 /**
  * 快捷输入验证器
@@ -35,20 +39,30 @@ class ValidateHelper extends Helper
                 list($name, $alias) = explode('#', $name);
             }
             if (stripos($name, '.') === false) {
-                $data[$name] = empty($alias) ? $name : $alias;
+                if (is_numeric($name)) {
+                    $keys = $message;
+                    if (is_string($message) && stripos($message, '#') !== false) {
+                        list($name, $alias) = explode('#', $message);
+                        $keys = empty($alias) ? $name : $alias;
+                    }
+                    $data[$name] = input("{$type}{$keys}");
+                } else {
+                    $data[$name] = $message;
+                }
             } else {
                 list($_rgx) = explode(':', $name);
                 list($_key, $_rule) = explode('.', $name);
+                $keys = empty($alias) ? $_key : $alias;
                 $info[$_rgx] = $message;
-                $data[$_key] = empty($alias) ? $_key : $alias;
+                $data[$_key] = input("{$type}{$keys}");
                 $rule[$_key] = empty($rule[$_key]) ? $_rule : "{$rule[$_key]}|{$_rule}";
             }
         }
-        foreach ($data as $key => $name) $data[$key] = input("{$type}{$name}");
-        if ($this->app->validate->rule($rule)->message($info)->check($data)) {
+        $validate = new Validate();
+        if ($validate->rule($rule)->message($info)->check($data)) {
             return $data;
         } else {
-            $this->controller->error($this->app->validate->getError());
+            $this->controller->error($validate->getError());
         }
     }
 

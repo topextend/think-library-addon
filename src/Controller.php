@@ -1,13 +1,16 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 namespace think\admin;
@@ -19,6 +22,7 @@ use think\admin\helper\QueryHelper;
 use think\admin\helper\SaveHelper;
 use think\admin\helper\TokenHelper;
 use think\admin\helper\ValidateHelper;
+use think\admin\service\QueueService;
 use think\App;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;
@@ -57,7 +61,7 @@ abstract class Controller extends \stdClass
      * 表单CSRF验证失败提示
      * @var string
      */
-    public $csrf_message = '表单令牌验证失败，请刷新页面再试！';
+    public $csrf_message;
 
     /**
      * Controller constructor.
@@ -79,16 +83,20 @@ abstract class Controller extends \stdClass
      */
     protected function initialize()
     {
+        if (empty($this->csrf_message)) {
+            $this->csrf_message = lang('think_library_csrf_error');
+        }
     }
 
     /**
      * 返回失败的操作
      * @param mixed $info 消息内容
-     * @param array $data 返回数据
+     * @param mixed $data 返回数据
      * @param integer $code 返回代码
      */
-    public function error($info, $data = [], $code = 0)
+    public function error($info, $data = '{-null-}', $code = 0)
     {
+        if ($data === '{-null-}') $data = new \stdClass();
         throw new HttpResponseException(json([
             'code' => $code, 'info' => $info, 'data' => $data,
         ]));
@@ -97,14 +105,15 @@ abstract class Controller extends \stdClass
     /**
      * 返回成功的操作
      * @param mixed $info 消息内容
-     * @param array $data 返回数据
+     * @param mixed $data 返回数据
      * @param integer $code 返回代码
      */
-    public function success($info, $data = [], $code = 1)
+    public function success($info, $data = '{-null-}', $code = 1)
     {
         if ($this->csrf_state) {
             TokenHelper::instance()->clear();
         }
+        if ($data === '{-null-}') $data = new \stdClass();
         throw new HttpResponseException(json([
             'code' => $code, 'info' => $info, 'data' => $data,
         ]));
@@ -189,14 +198,15 @@ abstract class Controller extends \stdClass
      * @param boolean $display 是否渲染模板
      * @param boolean $total 集合分页记录数
      * @param integer $limit 集合每页记录数
+     * @param string $template 模板文件名称
      * @return array
      * @throws DataNotFoundException
      * @throws DbException
      * @throws ModelNotFoundException
      */
-    protected function _page($dbQuery, $page = true, $display = true, $total = false, $limit = 0)
+    protected function _page($dbQuery, $page = true, $display = true, $total = false, $limit = 0, $template = '')
     {
-        return PageHelper::instance()->init($dbQuery, $page, $display, $total, $limit);
+        return PageHelper::instance()->init($dbQuery, $page, $display, $total, $limit, $template);
     }
 
     /**
@@ -262,6 +272,34 @@ abstract class Controller extends \stdClass
     protected function _applyFormToken($return = false)
     {
         return TokenHelper::instance()->init($return);
+    }
+
+    /**
+     * 创建异步任务并返回任务编号
+     * @param string $title 任务名称
+     * @param string $command 执行内容
+     * @param integer $later 延时执行时间
+     * @param array $data 任务附加数据
+     * @param integer $rscript 任务类型(0单例,1多例)
+     * @param integer $loops 循环等待时间
+     */
+    protected function _queue($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
+    {
+        try {
+            $queue = QueueService::instance()->register($title, $command, $later, $data, $rscript, $loops);
+            $this->success('创建任务成功！', $queue->code);
+        } catch (Exception $exception) {
+            $code = $exception->getData();
+            if (is_string($code) && stripos($code, 'Q') === 0) {
+                $this->success('任务已经存在，无需再次创建！', $code);
+            } else {
+                $this->error($exception->getMessage());
+            }
+        } catch (HttpResponseException $exception) {
+            throw $exception;
+        } catch (\Exception $exception) {
+            $this->error("创建任务失败，{$exception->getMessage()}");
+        }
     }
 
 }

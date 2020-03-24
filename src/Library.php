@@ -16,6 +16,7 @@ use think\admin\service\AdminService;
 use think\middleware\SessionInit;
 use think\Request;
 use think\Service;
+use function Composer\Autoload\includeFile;
 
 /**
  * 模块注册服务
@@ -29,16 +30,22 @@ class Library extends Service
      */
     public function register()
     {
+        // 加载中文语言
+        $this->app->lang->load(__DIR__ . '/lang/zh-cn.php', 'zh-cn');
+        $this->app->lang->load(__DIR__ . '/lang/en-us.php', 'en-us');
+        // 输入变量默认过滤
+        $this->app->request->filter(['trim']);
+        // 判断访问模式，兼容 CLI 访问控制器
         if ($this->app->request->isCli()) {
             if (empty($_SERVER['REQUEST_URI']) && isset($_SERVER['argv'][1])) {
                 $this->app->request->setPathinfo($_SERVER['argv'][1]);
             }
         } else {
-            // 注册会话中间键
+            // 注册会话初始化中间键
             if ($this->app->request->request('not_init_session', 0) == 0) {
                 $this->app->middleware->add(SessionInit::class);
             }
-            // 注册访问中间键
+            // 注册访问处理中间键
             $this->app->middleware->add(function (Request $request, \Closure $next) {
                 $header = [];
                 if (($origin = $request->header('origin', '*')) !== '*') {
@@ -51,18 +58,17 @@ class Library extends Service
                 if ($request->isOptions()) {
                     return response()->code(204)->header($header);
                 } elseif (AdminService::instance()->check()) {
-                    return $next($request)->code(200)->header($header);
+                    return $next($request)->header($header);
                 } elseif (AdminService::instance()->isLogin()) {
-                    return json(['code' => 0, 'msg' => '抱歉，没有访问该操作的权限！'])->header($header);
+                    return json(['code' => 0, 'msg' => lang('think_library_not_auth')])->header($header);
                 } else {
-                    return json(['code' => 0, 'msg' => '抱歉，需要登录获取访问权限！', 'url' => url('@admin/login')->build()])->header($header);
+                    return json(['code' => 0, 'msg' => lang('think_library_not_login'), 'url' => url('@admin/login')->build()])->header($header);
                 }
             }, 'route');
         }
         // 动态加入应用函数
-        foreach (glob($this->app->getAppPath() . '*/sys.php') as $file) {
-            \Composer\Autoload\includeFile($file);
-        }
+        $sysRule = "{$this->app->getAppPath()}*/sys.php";
+        foreach (glob($sysRule) as $file) includeFile($file);
     }
 
     /**
@@ -72,14 +78,15 @@ class Library extends Service
     {
         // 注册系统任务指令
         $this->commands([
-            'think\admin\queue\WorkQueue',
-            'think\admin\queue\StopQueue',
-            'think\admin\queue\StateQueue',
-            'think\admin\queue\StartQueue',
-            'think\admin\queue\QueryQueue',
-            'think\admin\queue\ListenQueue',
             'think\admin\command\Install',
             'think\admin\command\Version',
+            'think\admin\command\queue\CleanQueue',
+            'think\admin\command\queue\WorkQueue',
+            'think\admin\command\queue\StopQueue',
+            'think\admin\command\queue\StateQueue',
+            'think\admin\command\queue\StartQueue',
+            'think\admin\command\queue\QueryQueue',
+            'think\admin\command\queue\ListenQueue',
         ]);
     }
 }

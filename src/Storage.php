@@ -1,17 +1,23 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 namespace think\admin;
 
+use think\admin\storage\AliossStorage;
+use think\admin\storage\LocalStorage;
+use think\admin\storage\QiniuStorage;
 use think\App;
 use think\Container;
 
@@ -19,14 +25,14 @@ use think\Container;
  * 文件存储引擎管理
  * Class Storage
  * @package think\admin
- * @method array info($name, $safe = false) static 文件存储信息
- * @method array set($name, $file, $safe = false) static 文件储存
+ * @method array info($name, $safe = false, $attname = null) static 文件存储信息
+ * @method array set($name, $file, $safe = false, $attname = null) static 储存文件
+ * @method string url($name, $safe = false, $attname = null) static 获取文件链接
  * @method string get($name, $safe = false) static 读取文件内容
- * @method string url($name, $safe = false) static 获取文件链接
  * @method string path($name, $safe = false) static 文件存储路径
  * @method boolean del($name, $safe = false) static 删除存储文件
- * @method boolean has($name, $safe = false) static 检查文件是否存在
- * @method string upload() static 上传目录地址
+ * @method boolean has($name, $safe = false) static 检查是否存在
+ * @method string upload() static 获取上传地址
  */
 abstract class Storage
 {
@@ -37,10 +43,16 @@ abstract class Storage
     protected $app;
 
     /**
-     * 存储域名前缀
+     * 链接前缀
      * @var string
      */
     protected $prefix;
+
+    /**
+     * 链接类型
+     * @var string
+     */
+    protected $linkType;
 
     /**
      * Storage constructor.
@@ -53,10 +65,14 @@ abstract class Storage
 
     /**
      * 存储初始化
-     * @return Storage
+     * @return AliossStorage|LocalStorage|QiniuStorage
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function initialize(): Storage
+    protected function initialize()
     {
+        $this->linkType = sysconf('storage.link_type');
         return $this;
     }
 
@@ -82,13 +98,13 @@ abstract class Storage
     /**
      * 设置文件驱动名称
      * @param string $name 驱动名称
-     * @return static
+     * @return AliossStorage|LocalStorage|QiniuStorage
      * @throws \think\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public static function instance($name = null): Storage
+    public static function instance($name = null)
     {
         $class = ucfirst(strtolower(is_null($name) ? sysconf('storage.type') : $name));
         if (class_exists($object = "think\\admin\\storage\\{$class}Storage")) {
@@ -106,13 +122,12 @@ abstract class Storage
      * @param string $fun 名称规则方法
      * @return string
      */
-    public static function name($url, $ext = '', $pre = '', $fun = 'md5'): string
+    public static function name($url, $ext = '', $pre = '', $fun = 'md5')
     {
-        empty($ext) && $ext = pathinfo($url, 4);
-        empty($ext) || $ext = trim($ext, '.\\/');
-        empty($pre) || $pre = trim($pre, '.\\/');
-        $splits = array_merge([$pre], str_split($fun($url), 16));
-        return trim(join('/', $splits), '/') . '.' . strtolower($ext ? $ext : 'tmp');
+        if (empty($ext)) $ext = pathinfo($url, 4);
+        list($xmd, $ext) = [$fun($url), trim($ext, '.\\/')];
+        $attr = [trim($pre, '.\\/'), substr($xmd, 0, 2), substr($xmd, 2, 30)];
+        return trim(join('/', $attr), '/') . '.' . strtolower($ext ? $ext : 'tmp');
     }
 
     /**
@@ -125,7 +140,7 @@ abstract class Storage
     public static function down($url, $force = false, $expire = 0)
     {
         try {
-            $file = self::instance();
+            $file = LocalStorage::instance();
             $name = self::name($url, '', 'down/');
             if (empty($force) && $file->has($name)) {
                 if ($expire < 1 || filemtime($file->path($name)) + $expire > time()) {
@@ -144,7 +159,7 @@ abstract class Storage
      * @param array $mime 文件信息
      * @return string
      */
-    public static function mime($exts, $mime = []): string
+    public static function mime($exts, $mime = [])
     {
         $mimes = self::mimes();
         foreach (is_string($exts) ? explode(',', $exts) : $exts as $ext) {
@@ -164,4 +179,31 @@ abstract class Storage
         return $mimes = include __DIR__ . '/storage/bin/mimes.php';
     }
 
+    /**
+     * 获取下载链接后缀
+     * @param string $attname 下载名称
+     * @return string
+     */
+    protected function getSuffix($attname = null)
+    {
+        if ($this->linkType === 'full') {
+            if (is_string($attname) && strlen($attname) > 0) {
+                return "?attname=" . urlencode($attname);
+            }
+        }
+        return '';
+    }
+
+    /**
+     * 获取文件基础名称
+     * @param string $name 文件名称
+     * @return string
+     */
+    protected function delSuffix($name)
+    {
+        if (strpos($name, '?') !== false) {
+            return strstr($name, '?', true);
+        }
+        return $name;
+    }
 }

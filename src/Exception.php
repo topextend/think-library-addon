@@ -13,30 +13,51 @@
 // | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
-namespace think\admin\command;
-
-use think\admin\service\ProcessService;
-use think\App;
-use think\console\Command;
-use think\console\Input;
-use think\console\Output;
+namespace think\admin;
 
 /**
- * 获取框架版本号
- * Class Version
- * @package think\admin\command
+ * 自定义数据异常
+ * Class Exception
+ * @package think\admin
  */
-class Version extends Command
+class Exception extends \Exception
 {
-    protected function configure()
+    /**
+     * 异常数据对象
+     * @var mixed
+     */
+    protected $data = [];
+
+    /**
+     * Exception constructor.
+     * @param string $message
+     * @param integer $code
+     * @param mixed $data
+     */
+    public function __construct($message = "", $code = 0, $data = [])
     {
-        $this->setName('xadmin:version');
-        $this->setDescription("Query application framework version");
+        $this->data = $data;
+        $this->code = $code;
+        $this->message = $message;
+        parent::__construct($message, $code);
     }
 
-    protected function execute(Input $input, Output $output)
+    /**
+     * 设置异常停止数据
+     * @param mixed $data
+     */
+    public function setData($data)
     {
-        $output->writeln("ThinkAdmin " . ProcessService::instance()->version());
-        $output->writeln('ThinkPHPCore ' . App::VERSION);
+        $this->data = $data;
     }
+
+    /**
+     * 获取异常停止数据
+     * @return mixed
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
+
 }

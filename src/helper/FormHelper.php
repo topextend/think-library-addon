@@ -1,13 +1,16 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
 namespace think\admin\helper;
@@ -88,8 +91,11 @@ class FormHelper extends Helper
             if (false !== $this->controller->callback('_form_filter', $data, $this->where)) {
                 $result = data_save($this->query, $data, $this->field, $this->where);
                 if (false !== $this->controller->callback('_form_result', $result, $data)) {
-                    if ($result !== false) $this->controller->success('恭喜, 数据保存成功!', '');
-                    $this->controller->error('数据保存失败, 请稍候再试!');
+                    if ($result !== false) {
+                        $this->controller->success(lang('think_library_form_success'));
+                    } else {
+                        $this->controller->error(lang('think_library_form_error'));
+                    }
                 }
                 return $result;
             }

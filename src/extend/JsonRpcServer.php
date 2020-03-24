@@ -1,28 +1,56 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
+namespace think\admin\extend;
 
-namespace think\admin\service;
-
-use think\admin\Service;
+use think\App;
+use think\Container;
 use think\exception\HttpResponseException;
 
 /**
- * JsonRpc 服务端服务
- * Class JsonRpcServerService
- * @package think\admin\service
+ * JsonRpc 服务端
+ * Class JsonRpcServer
+ * @package think\admin\extend
  */
-class JsonRpcServerService extends Service
+class JsonRpcServer
 {
+    /**
+     * 当前App对象
+     * @var App
+     */
+    protected $app;
+
+    /**
+     * JsonRpcServer constructor.
+     * @param App $app
+     */
+    public function __construct(App $app)
+    {
+        $this->app = $app;
+    }
+
+    /**
+     * 静态实例对象
+     * @param array $args
+     * @return static
+     */
+    public static function instance(...$args): JsonRpcServer
+    {
+        return Container::getInstance()->make(static::class, $args);
+    }
+
     /**
      * 设置监听对象
      * @param mixed $object
@@ -60,5 +88,4 @@ class JsonRpcServerService extends Service
             throw new HttpResponseException(json($response)->contentType('text/javascript'));
         }
     }
-
 }

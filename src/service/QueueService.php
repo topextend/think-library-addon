@@ -25,42 +25,46 @@ class QueueService extends Service
 
     /**
      * 当前任务编号
-     * @var integer
+     * @var string
      */
-    protected $code = 0;
+    public $code = '';
 
     /**
      * 当前任务标题
      * @var string
      */
-    protected $title = '';
+    public $title = '';
 
     /**
      * 当前任务参数
      * @var array
      */
-    protected $data = [];
+    public $data = [];
 
     /**
      * 当前任务数据
      * @var array
      */
-    protected $queue = [];
+    public $queue = [];
 
     /**
      * 数据初始化
      * @param integer $code
      * @return static
-     * @throws \think\Exception
+     * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function initialize($code = 0): Service
+    public function initialize($code = 0)
     {
-        if ($code > 0) {
-            $this->queue = $this->app->db->name('Queue')->where(['code' => $this->code])->find();
-            if (empty($this->queue)) throw new \think\Exception("Queue {$code} Not found.");
+        if (!empty($code)) {
+            $this->code = $code;
+            $this->queue = $this->app->db->name('SystemQueue')->where(['code' => $this->code])->find();
+            if (empty($this->queue)) {
+                $this->app->log->error("Qeueu initialize failed, Queue {$code} not found.");
+                throw new \think\admin\Exception("Qeueu initialize failed, Queue {$code} not found.");
+            }
             $this->code = $this->queue['code'];
             $this->title = $this->queue['title'];
             $this->data = json_decode($this->queue['exec_data'], true) ?: [];
@@ -81,41 +85,59 @@ class QueueService extends Service
      * 重发异步任务
      * @param integer $wait 等待时间
      * @return $this
-     * @throws \think\Exception
+     * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
     public function reset($wait = 0)
     {
-        if (empty($this->queue)) throw new \think\Exception('Queue data cannot be empty!');
-        $this->app->db->name('Queue')->where(['code' => $this->code])->failException(true)->update([
-            'exec_time' => time() + $wait, 'attempts' => $this->queue['attempts'] + 1, 'status' => '1',
+        if (empty($this->queue)) {
+            $this->app->log->error("Qeueu reset failed, Queue {$this->code} data cannot be empty!");
+            throw new \think\admin\Exception("Qeueu reset failed, Queue {$this->code} data cannot be empty!");
+        }
+        $map = ['code' => $this->code];
+        $this->app->db->name('SystemQueue')->where($map)->strict(false)->failException(true)->update([
+            'exec_pid' => '0', 'exec_time' => time() + $wait, 'status' => '1',
         ]);
         return $this->initialize($this->code);
     }
 
     /**
-     * 注册异步处理任务
-     * @param string $title 任务名称
-     * @param string $command 执行内容
-     * @param integer $later 延时执行时间
-     * @param array $data 任务附加数据
-     * @param integer $rscript 任务多开
+     * 添加清理定时清理任务
      * @return $this
-     * @throws \think\Exception
+     * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function register($title, $command, $later = 0, $data = [], $rscript = 1)
+    public function addCleanQueue()
+    {
+        return $this->register('清理7天前记录及执行超时的任务', "xtask:clean", 0, [], 0, 3600);
+    }
+
+    /**
+     * 注册异步处理任务
+     * @param string $title 任务名称
+     * @param string $command 执行脚本
+     * @param integer $later 延时时间
+     * @param array $data 任务附加数据
+     * @param integer $rscript 任务类型(0单例,1多例)
+     * @param integer $loops 循环等待时间
+     * @return $this
+     * @throws \think\admin\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function register($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
     {
         $map = [['title', '=', $title], ['status', 'in', ['1', '2']]];
-        if (empty($rscript) && $this->app->db->name('Queue')->where($map)->count() > 0) {
-            throw new \think\Exception('该任务已经创建，请耐心等待处理完成！');
+        if (empty($rscript) && ($queue = $this->app->db->name('SystemQueue')->where($map)->find())) {
+            throw new \think\admin\Exception(lang('think_library_queue_exist'), 0, $queue['code']);
         }
-        $this->app->db->name('Queue')->failException(true)->insert([
-            'code'       => $this->code = CodeExtend::uniqidDate(16),
+        $this->app->db->name('SystemQueue')->strict(false)->failException(true)->insert([
+            'code'       => $this->code = CodeExtend::uniqidDate(16, 'Q'),
             'title'      => $title,
             'command'    => $command,
             'attempts'   => '0',
@@ -124,8 +146,56 @@ class QueueService extends Service
             'exec_time'  => $later > 0 ? time() + $later : time(),
             'enter_time' => '0',
             'outer_time' => '0',
+            'loops_time' => $loops,
         ]);
+        $this->progress(1, '>>> 任务创建成功 <<<', 0.00);
         return $this->initialize($this->code);
+    }
+
+    /**
+     * 设置任务进度信息
+     * @param null|integer $status 任务状态
+     * @param null|string $message 进度消息
+     * @param null|integer $progress 进度数值
+     * @return array
+     */
+    public function progress($status = null, $message = null, $progress = null)
+    {
+        if (is_numeric($status) && intval($status) === 3) {
+            if (!is_numeric($progress)) $progress = '100.00';
+            if (is_null($message)) $message = '>>> 任务已经完成 <<<';
+        }
+        if (is_numeric($status) && intval($status) === 4) {
+            if (!is_numeric($progress)) $progress = '0.00';
+            if (is_null($message)) $message = '>>> 任务执行失败 <<<';
+        }
+        try {
+            $data = $this->app->cache->get("queue_{$this->code}_progress", [
+                'code' => $this->code, 'status' => $status, 'message' => $message, 'progress' => $progress, 'history' => [],
+            ]);
+        } catch (\Exception|\TypeError $exception) {
+            return $this->progress($status, $message, $progress);
+        }
+        if (is_numeric($status)) $data['status'] = intval($status);
+        if (is_numeric($progress)) $progress = sprintf("%.2f", $progress);
+        if (is_string($message) && is_null($progress)) {
+            $data['message'] = $message;
+            $data['history'][] = ['message' => $message, 'progress' => $data['progress']];
+        } elseif (is_null($message) && is_numeric($progress)) {
+            $data['progress'] = $progress;
+            $data['history'][] = ['message' => $data['message'], 'progress' => $progress];
+        } elseif (is_string($message) && is_numeric($progress)) {
+            $data['message'] = $message;
+            $data['progress'] = $progress;
+            $data['history'][] = ['message' => $message, 'progress' => $progress];
+        }
+        if (is_string($message) || is_numeric($progress)) {
+            if (count($data['history']) > 10) {
+                $data['history'] = array_slice($data['history'], -10);
+            }
+            $this->app->cache->set("queue_{$this->code}_progress", $data);
+        }
+        return $data;
     }
 
     /**

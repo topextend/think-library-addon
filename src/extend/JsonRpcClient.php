@@ -1,28 +1,33 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Library for ThinkAdmin
 // +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
+// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
+// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
 // +----------------------------------------------------------------------
 
-
-namespace think\admin\service;
-
-use think\admin\extend\CodeExtend;
-use think\admin\Service;
+namespace think\admin\extend;
 
 /**
- * JsonRpc 客户端服务
- * Class JsonRpcClientService
- * @package think\admin\service
+ * JsonRpc 客户端
+ * Class JsonRpcClient
+ * @package think\admin\extend
  */
-class JsonRpcClientService extends Service
+class JsonRpcClient
 {
+    /**
+     * 请求ID
+     * @var integer
+     */
+    private $id;
+
     /**
      * 服务端地址
      * @var string
@@ -30,21 +35,13 @@ class JsonRpcClientService extends Service
     private $proxy;
 
     /**
-     * 请求ID
-     * @var integer
+     * JsonRpcClient constructor.
+     * @param $proxy
      */
-    private $requestid;
-
-    /**
-     * 创建连接对象
-     * @param string $proxy
-     * @return $this
-     */
-    public function create($proxy)
+    public function __construct($proxy)
     {
-        $this->requestid = CodeExtend::uniqidNumber();
+        $this->id = CodeExtend::uniqidNumber();
         $this->proxy = $proxy;
-        return $this;
     }
 
     /**
@@ -52,7 +49,7 @@ class JsonRpcClientService extends Service
      * @param string $method
      * @param array $params
      * @return mixed
-     * @throws \think\Exception
+     * @throws \think\admin\Exception
      */
     public function __call($method, $params)
     {
@@ -62,7 +59,7 @@ class JsonRpcClientService extends Service
                 'method'  => 'POST',
                 'header'  => 'Content-type: application/json',
                 'content' => json_encode([
-                    'jsonrpc' => '2.0', 'method' => $method, 'params' => $params, 'id' => $this->requestid,
+                    'jsonrpc' => '2.0', 'method' => $method, 'params' => $params, 'id' => $this->id,
                 ], JSON_UNESCAPED_UNICODE),
             ],
         ];
@@ -72,16 +69,16 @@ class JsonRpcClientService extends Service
             fclose($fp);
             $response = json_decode($response, true);
         } else {
-            throw new \think\Exception("无法连接到 {$this->proxy}");
+            throw new \think\admin\Exception("无法连接到 {$this->proxy}");
         }
         // Final checks and return
-        if ($response['id'] != $this->requestid) {
-            throw new \think\Exception("错误的响应标记 (请求标记: {$this->requestid}, 响应标记: {$response['id']}）");
+        if ($response['id'] != $this->id) {
+            throw new \think\admin\Exception("错误的响应标记 (请求标记: {$this->id}, 响应标记: {$response['id']}）");
         }
         if (is_null($response['error'])) {
             return $response['result'];
         } else {
-            throw new \think\Exception("请求错误：{$response['error']['message']}", $response['error']['code']);
+            throw new \think\admin\Exception("请求错误：{$response['error']['message']}", $response['error']['code']);
         }
     }
 }

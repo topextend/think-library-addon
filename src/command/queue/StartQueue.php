@@ -10,19 +10,18 @@
 // | gitee 代码仓库：https://github.com/topextend/think-library
 // +----------------------------------------------------------------------
 
-namespace think\admin\queue;
+namespace think\admin\command\queue;
 
-use think\admin\service\ProcessService;
-use think\console\Command;
+use think\admin\command\Queue;
 use think\console\Input;
 use think\console\Output;
 
 /**
  * 检查并创建监听主进程
  * Class StartQueue
- * @package think\admin\queue
+ * @package think\admin\command\queue
  */
-class StartQueue extends Command
+class StartQueue extends Queue
 {
 
     /**
@@ -30,7 +29,7 @@ class StartQueue extends Command
      */
     protected function configure()
     {
-        $this->setName('xtask:start')->setDescription('[控制]创建守护监听主进程');
+        $this->setName('xtask:start')->setDescription('Create daemons to listening main process');
     }
 
     /**
@@ -40,18 +39,17 @@ class StartQueue extends Command
      */
     protected function execute(Input $input, Output $output)
     {
-        $this->app->db->name('Queue')->count();
-        $service = ProcessService::instance();
-        $command = $service->think("xtask:listen");
-        if (count($result = $service->query($command)) > 0) {
-            $output->info("监听主进程{$result['0']['pid']}已经启动！");
+        $this->app->db->name($this->table)->count();
+        $command = $this->process->think("xtask:listen");
+        if (count($result = $this->process->query($command)) > 0) {
+            $output->info("Listening main process {$result['0']['pid']} has started");
         } else {
-            $service->create($command);
+            $this->process->create($command);
             sleep(1);
-            if (count($result = $service->query($command)) > 0) {
-                $output->info("监听主进程{$result['0']['pid']}启动成功！");
+            if (count($result = $this->process->query($command)) > 0) {
+                $output->info("Listening main process {$result['0']['pid']} started successfully");
             } else {
-                $output->error('监听主进程创建失败！');
+                $output->error('Failed to create listening main process');
             }
         }
     }
