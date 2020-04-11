@@ -1,16 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Library for ThinkAdmin
+// | Ladmin
 // +----------------------------------------------------------------------
-// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
-// +----------------------------------------------------------------------
-// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
-// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\extend;
@@ -173,9 +170,7 @@ class HttpExtend
      */
     private static function getUserAgent()
     {
-        if (!empty($_SERVER['HTTP_USER_AGENT'])) {
-            return $_SERVER['HTTP_USER_AGENT'];
-        }
+        if (!empty($_SERVER['HTTP_USER_AGENT'])) return $_SERVER['HTTP_USER_AGENT'];
         $agents = [
             "Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1",
             "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",

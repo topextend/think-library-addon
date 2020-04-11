@@ -1,13 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Ladmin
 // +----------------------------------------------------------------------
 // | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\command\queue;
@@ -44,8 +44,7 @@ class StartQueue extends Queue
         if (count($result = $this->process->query($command)) > 0) {
             $output->info("Listening main process {$result['0']['pid']} has started");
         } else {
-            $this->process->create($command);
-            sleep(1);
+            [$this->process->create($command), sleep(1)];
             if (count($result = $this->process->query($command)) > 0) {
                 $output->info("Listening main process {$result['0']['pid']} started successfully");
             } else {

@@ -1,13 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Ladmin
 // +----------------------------------------------------------------------
 // | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\service;
@@ -48,7 +48,7 @@ class MenuService extends Service
      */
     public function getTree()
     {
-        $result = $this->app->db->name('Menu')->where(['status' => '1'])->order('sort desc,id asc')->select();
+        $result = $this->app->db->name('SystemMenu')->where(['status' => '1'])->order('sort desc,id asc')->select();
         return $this->buildData(DataExtend::arr2tree($result->toArray()), NodeService::instance()->getMethods());
     }
 

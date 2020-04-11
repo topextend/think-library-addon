@@ -1,13 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Ladmin
 // +----------------------------------------------------------------------
 // | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\command\queue;
@@ -47,8 +47,8 @@ class ListenQueue extends Queue
         $output->writeln('============ LISTENING ============');
         while (true) {
             $where = [['status', '=', '1'], ['exec_time', '<=', time()]];
-            $this->app->db->name($this->table)->where($where)->order('exec_time asc')->chunk(100, function (Collection $list) {
-                foreach ($list as $vo) try {
+            $this->app->db->name($this->table)->where($where)->order('exec_time asc')->chunk(100, function (Collection $result) {
+                foreach ($result->toArray() as $vo) try {
                     $command = $this->process->think("xtask:_work {$vo['code']} -");
                     if (count($this->process->query($command)) > 0) {
                         $this->output->writeln("Already in progress -> [{$vo['code']}] {$vo['title']}");

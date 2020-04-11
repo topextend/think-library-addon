@@ -1,13 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Ladmin
 // +----------------------------------------------------------------------
 // | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin;
@@ -26,7 +26,7 @@ use function Composer\Autoload\includeFile;
 class Library extends Service
 {
     /**
-     * 注册服务
+     * 注册初始化服务
      */
     public function register()
     {
@@ -80,6 +80,7 @@ class Library extends Service
         $this->commands([
             'think\admin\command\Install',
             'think\admin\command\Version',
+            // 系统异步任务指令
             'think\admin\command\queue\CleanQueue',
             'think\admin\command\queue\WorkQueue',
             'think\admin\command\queue\StopQueue',
@@ -87,6 +88,9 @@ class Library extends Service
             'think\admin\command\queue\StartQueue',
             'think\admin\command\queue\QueryQueue',
             'think\admin\command\queue\ListenQueue',
+            // 数据库表优化指令
+            'think\admin\command\database\Optimize',
+            'think\admin\command\database\Repair',
         ]);
     }
 }

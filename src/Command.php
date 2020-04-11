@@ -1,16 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Library for ThinkAdmin
+// | Ladmin
 // +----------------------------------------------------------------------
-// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
-// +----------------------------------------------------------------------
-// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
-// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin;
@@ -65,6 +62,9 @@ class Command extends ThinkCommand
     protected function setQueueProgress($status = null, $message = null, $progress = null)
     {
         if (defined('WorkQueueCode')) {
+            if (!$this->queue instanceof QueueService) {
+                $this->queue = QueueService::instance();
+            }
             if ($this->queue->code !== WorkQueueCode) {
                 $this->queue->initialize(WorkQueueCode);
             }
@@ -85,11 +85,33 @@ class Command extends ThinkCommand
     protected function setQueueMessage($status, $message)
     {
         if (defined('WorkQueueCode')) {
-            throw new Exception($message, $status);
+            throw new Exception($message, $status, WorkQueueCode);
         } elseif (is_string($message)) {
             $this->output->writeln($message);
         }
         return $this;
+    }
+
+    /**
+     * 设置成功的消息
+     * @param string $message 消息内容
+     * @return Command
+     * @throws Exception
+     */
+    protected function setQueueSuccessMessage($message)
+    {
+        return $this->setQueueMessage(3, $message);
+    }
+
+    /**
+     * 设置失败的消息
+     * @param string $message 消息内容
+     * @return Command
+     * @throws Exception
+     */
+    protected function setQueueErrorMessage($message)
+    {
+        return $this->setQueueMessage(4, $message);
     }
 
 }

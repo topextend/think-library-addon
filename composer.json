@@ -2,8 +2,7 @@
   "type": "library",
   "name": "topextend/think-library",
   "license": "MIT",
-  "homepage": "http://framework.thinkadmin.top",
-  "description": "ThinkPHP v6.0 Development Library",
+  "description": "ThinkPHP v6.0 Library",
   "authors": [
     {
       "name": "Jarmin",
@@ -19,7 +18,7 @@
   },
   "autoload": {
     "files": [
-      "src/common.php"
+      "src/Common.php"
     ],
     "psr-4": {
       "think\\admin\\": "src"

@@ -1,13 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Ladmin
 // +----------------------------------------------------------------------
 // | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\service;
@@ -60,7 +60,7 @@ class QueueService extends Service
     {
         if (!empty($code)) {
             $this->code = $code;
-            $this->queue = $this->app->db->name('Queue')->where(['code' => $this->code])->find();
+            $this->queue = $this->app->db->name('SystemQueue')->where(['code' => $this->code])->find();
             if (empty($this->queue)) {
                 $this->app->log->error("Qeueu initialize failed, Queue {$code} not found.");
                 throw new \think\admin\Exception("Qeueu initialize failed, Queue {$code} not found.");
@@ -97,14 +97,14 @@ class QueueService extends Service
             throw new \think\admin\Exception("Qeueu reset failed, Queue {$this->code} data cannot be empty!");
         }
         $map = ['code' => $this->code];
-        $this->app->db->name('Queue')->where($map)->strict(false)->failException(true)->update([
+        $this->app->db->name('SystemQueue')->where($map)->strict(false)->failException(true)->update([
             'exec_pid' => '0', 'exec_time' => time() + $wait, 'status' => '1',
         ]);
         return $this->initialize($this->code);
     }
 
     /**
-     * 添加清理定时清理任务
+     * 添加定时清理任务
      * @return $this
      * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
@@ -113,7 +113,7 @@ class QueueService extends Service
      */
     public function addCleanQueue()
     {
-        return $this->register('清理7天前记录及执行超时的任务', "xtask:clean", 0, [], 0, 3600);
+        return $this->register('定时清理系统任务数据', "xtask:clean", 0, [], 0, 3600);
     }
 
     /**
@@ -133,11 +133,12 @@ class QueueService extends Service
     public function register($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
     {
         $map = [['title', '=', $title], ['status', 'in', ['1', '2']]];
-        if (empty($rscript) && ($queue = $this->app->db->name('Queue')->where($map)->find())) {
+        if (empty($rscript) && ($queue = $this->app->db->name('SystemQueue')->where($map)->find())) {
             throw new \think\admin\Exception(lang('think_library_queue_exist'), 0, $queue['code']);
         }
-        $this->app->db->name('Queue')->strict(false)->failException(true)->insert([
-            'code'       => $this->code = CodeExtend::uniqidDate(16, 'Q'),
+        $this->code = CodeExtend::uniqidDate(16, 'Q');
+        $this->app->db->name('SystemQueue')->strict(false)->failException(true)->insert([
+            'code'       => $this->code,
             'title'      => $title,
             'command'    => $command,
             'attempts'   => '0',
@@ -173,21 +174,21 @@ class QueueService extends Service
             $data = $this->app->cache->get("queue_{$this->code}_progress", [
                 'code' => $this->code, 'status' => $status, 'message' => $message, 'progress' => $progress, 'history' => [],
             ]);
-        } catch (\Exception|\TypeError $exception) {
+        } catch (\Exception|\Error $exception) {
             return $this->progress($status, $message, $progress);
         }
         if (is_numeric($status)) $data['status'] = intval($status);
-        if (is_numeric($progress)) $progress = sprintf("%.2f", $progress);
+        if (is_numeric($progress)) $progress = str_pad(sprintf("%.2f", $progress), 6, "0", STR_PAD_LEFT);
         if (is_string($message) && is_null($progress)) {
             $data['message'] = $message;
-            $data['history'][] = ['message' => $message, 'progress' => $data['progress']];
+            $data['history'][] = ['message' => $message, 'progress' => $data['progress'], 'datetime' => date('Y-m-d H:i:s')];
         } elseif (is_null($message) && is_numeric($progress)) {
             $data['progress'] = $progress;
-            $data['history'][] = ['message' => $data['message'], 'progress' => $progress];
+            $data['history'][] = ['message' => $data['message'], 'progress' => $progress, 'datetime' => date('Y-m-d H:i:s')];
         } elseif (is_string($message) && is_numeric($progress)) {
             $data['message'] = $message;
             $data['progress'] = $progress;
-            $data['history'][] = ['message' => $message, 'progress' => $progress];
+            $data['history'][] = ['message' => $message, 'progress' => $progress, 'datetime' => date('Y-m-d H:i:s')];
         }
         if (is_string($message) || is_numeric($progress)) {
             if (count($data['history']) > 10) {

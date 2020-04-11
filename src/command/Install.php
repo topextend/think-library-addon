@@ -1,16 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Library for ThinkAdmin
+// | Ladmin
 // +----------------------------------------------------------------------
-// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
-// +----------------------------------------------------------------------
-// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 仓库地址 ：https://gitee.com/zoujingli/ThinkLibrary
-// | github 仓库地址 ：https://github.com/zoujingli/ThinkLibrary
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\command;
@@ -69,6 +66,8 @@ class Install extends Command
                 'config/session.php',
                 'config/trace.php',
                 'config/view.php',
+                'public/index.php',
+                'public/router.php',
             ],
             'ignore' => [],
         ],
@@ -112,9 +111,9 @@ class Install extends Command
         else foreach ($data as $file) {
             list($state, $mode, $name) = InstallService::instance()->fileSynchronization($file);
             if ($state) {
-                if ($mode === 'add') $this->output->writeln("--- {$name} added successfully");
-                if ($mode === 'mod') $this->output->writeln("--- {$name} updated successfully");
-                if ($mode === 'del') $this->output->writeln("--- {$name} deleted successfully");
+                if ($mode === 'add') $this->output->writeln("--- {$name} add successfully");
+                if ($mode === 'mod') $this->output->writeln("--- {$name} update successfully");
+                if ($mode === 'del') $this->output->writeln("--- {$name} delete successfully");
             } else {
                 if ($mode === 'add') $this->output->writeln("--- {$name} add failed");
                 if ($mode === 'mod') $this->output->writeln("--- {$name} update failed");

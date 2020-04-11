@@ -1,13 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | Think-Library
+// | Ladmin
 // +----------------------------------------------------------------------
 // | 官方网站: http://www.ladmin.cn
 // +----------------------------------------------------------------------
 // | 开源协议 ( https://mit-license.org )
 // +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/think-library
+// | gitee 代码仓库：https://github.com/topextend/ladmin
 // +----------------------------------------------------------------------
 
 namespace think\admin\command\queue;
@@ -91,7 +91,7 @@ class WorkQueue extends Queue
                     if (method_exists($command, 'instance') && ($class = $command::instance()) instanceof QueueService) {
                         $this->update('3', $class->initialize($this->code)->execute(json_decode($this->queue['exec_data'], true) ?: []));
                     } else {
-                        throw new \think\Exception("自定义 {$command} 未继承 QueueService");
+                        throw new \think\admin\Exception("自定义 {$command} 未继承 QueueService");
                     }
                 } else {
                     // 自定义指令，不支持返回消息（支持异常结束，异常码可选择 3|4 设置任务状态）
@@ -99,7 +99,7 @@ class WorkQueue extends Queue
                     $this->update('3', $this->app->console->call(array_shift($attr), $attr)->fetch(), false);
                 }
             }
-        } catch (\Exception $exception) {
+        } catch (\Exception|\Error $exception) {
             $code = $exception->getCode();
             if (intval($code) !== 3) $code = 4;
             $this->update($code, $exception->getMessage());
@@ -135,7 +135,7 @@ class WorkQueue extends Queue
         if (isset($this->queue['loops_time']) && $this->queue['loops_time'] > 0) {
             try {
                 $this->qService->initialize($this->code)->reset($this->queue['loops_time']);
-            } catch (\Exception $exception) {
+            } catch (\Exception|\Error $exception) {
                 $this->app->log->error("Queue {$this->queue['code']} Loops Failed. {$exception->getMessage()}");
             }
         }
