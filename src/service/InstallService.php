@@ -108,7 +108,7 @@ class InstallService extends Service
      */
     private function downloadFile($encode)
     {
-        $result = json_decode(HttpExtend::get("{$this->uri}?s=admin/api.update/get&encode={$encode}"), true);
+        $result = json_decode(HttpExtend::get("{$this->uri}?s=api/update/get&encode={$encode}"), true);
         if (empty($result['code'])) return false;
         $filename = $this->path . decode($encode);
         file_exists(dirname($filename)) || mkdir(dirname($filename), 0755, true);
@@ -135,7 +135,7 @@ class InstallService extends Service
     public function grenerateDifference($rules = [], $ignore = [])
     {
         list($this->rules, $this->ignore, $data) = [$rules, $ignore, []];
-        $result = json_decode(HttpExtend::post("{$this->uri}?s=/admin/api.update/tree", [
+        $result = json_decode(HttpExtend::post("{$this->uri}?s=/api/update/tree", [
             'rules' => serialize($this->rules), 'ignore' => serialize($this->ignore),
         ]), true);
         if (!empty($result['code'])) {

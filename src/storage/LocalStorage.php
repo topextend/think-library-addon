@@ -166,7 +166,7 @@ class LocalStorage extends Storage
      */
     public function upload()
     {
-        return url('@admin/api.upload/file')->build();
+        return url('@api/upload/file')->build();
     }
 
 }
