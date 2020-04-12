@@ -186,7 +186,7 @@ class SystemService extends Service
     public function checkRunMode($type = 'dev')
     {
         $domain = $this->app->request->host(true);
-        $isDemo = is_numeric(stripos($domain, 'thinkadmin.top'));
+        $isDemo = is_numeric(stripos($domain, 'padmin.cn'));
         $isLocal = in_array($domain, ['127.0.0.1', 'localhost']);
         if ($type === 'dev') return $isLocal || $isDemo;
         if ($type === 'demo') return $isDemo;

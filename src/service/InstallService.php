@@ -62,7 +62,7 @@ class InstallService extends Service
         $this->version = $this->app->config->get('app.thinkadmin_ver');
         if (empty($this->version)) $this->version = 'v4';
         // 线上应用代码
-        $this->uri = "https://{$this->version}.thinkadmin.top";
+        $this->uri = "https://{$this->version}.padmin.cn";
         // 当前应用根目录
         $this->path = strtr($this->app->getRootPath(), '\\', '/');
         return $this;
