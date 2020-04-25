@@ -40,7 +40,7 @@ class SystemService extends Service
      */
     public function set($name, $value = '')
     {
-        list($type, $field) = $this->parse($name);
+        [$type, $field] = $this->parse($name);
         if (is_array($value)) {
             foreach ($value as $k => $v) $this->set("{$field}.{$k}", $v);
         } else {
@@ -61,7 +61,7 @@ class SystemService extends Service
      */
     public function get($name)
     {
-        list($type, $field, $outer) = $this->parse($name);
+        [$type, $field, $outer] = $this->parse($name);
         if (empty($this->data)) foreach ($this->app->db->name('SystemConfig')->select() as $vo) {
             $this->data[$vo['type']][$vo['name']] = $vo['value'];
         }
@@ -90,7 +90,7 @@ class SystemService extends Service
     public function save($dbQuery, $data, $key = 'id', $where = [])
     {
         $db = is_string($dbQuery) ? $this->app->db->name($dbQuery) : $dbQuery;
-        list($table, $value) = [$db->getTable(), isset($data[$key]) ? $data[$key] : null];
+        [$table, $value] = [$db->getTable(), isset($data[$key]) ? $data[$key] : null];
         $map = isset($where[$key]) ? [] : (is_string($value) ? [[$key, 'in', explode(',', $value)]] : [$key => $value]);
         if (is_array($info = $this->app->db->table($table)->master()->where($where)->where($map)->find()) && !empty($info)) {
             if ($this->app->db->table($table)->strict(false)->where($where)->where($map)->update($data) !== false) {
@@ -112,10 +112,27 @@ class SystemService extends Service
     private function parse($rule, $type = 'base')
     {
         if (stripos($rule, '.') !== false) {
-            list($type, $rule) = explode('.', $rule);
+            [$type, $rule] = explode('.', $rule);
         }
-        list($field, $outer) = explode('|', "{$rule}|");
+        [$field, $outer] = explode('|', "{$rule}|");
         return [$type, $field, strtolower($outer)];
+    }
+
+    /**
+     * 生成最短URL地址
+     * @param string $url 路由地址
+     * @param array $vars PATH 变量
+     * @param boolean|string $suffix 后缀
+     * @param boolean|string $domain 域名
+     * @return string
+     */
+    public function sysuri($url = '', array $vars = [], $suffix = true, $domain = false)
+    {
+        $d1 = $this->app->config->get('app.default_app');
+        $d3 = $this->app->config->get('route.default_action');
+        $d2 = $this->app->config->get('route.default_controller');
+        $location = $this->app->route->buildUrl($url, $vars)->suffix($suffix)->domain($domain)->build();
+        return preg_replace('|/\.html$|', '', preg_replace(["|^/{$d1}/{$d2}/{$d3}(\.html)?$|i", "|/{$d2}/{$d3}(\.html)?$|i", "|/{$d3}(\.html)?$|i"], ['$1', '$1', '$1'], $location));
     }
 
     /**
@@ -201,8 +218,79 @@ class SystemService extends Service
      */
     public function productMode($state = null)
     {
-        $lock = "{$this->app->getRootPath()}runtime/.product.mode";
-        return is_null($state) ? file_exists($lock) : ($state ? touch($lock) : @unlink($lock));
+        if (is_null($state)) {
+            return $this->bindRuntime();
+        } else {
+            return $this->setRuntime([], $state ? 'product' : 'developoer');
+        }
+    }
+
+    /**
+     * 设置实时运行配置
+     * @param array|null $map 应用映射
+     * @param string|null $run 支持模式
+     * @param array|null $uri 域名映射
+     * @return boolean 是否调试模式
+     */
+    public function setRuntime($map = [], $run = null, $uri = [])
+    {
+        $data = $this->getRuntime();
+        if (is_array($map) && count($map) > 0 && count($data['app_map']) > 0) {
+            foreach ($data['app_map'] as $kk => $vv) if (in_array($vv, $map)) unset($data['app_map'][$kk]);
+        }
+        if (is_array($uri) && count($uri) > 0 && count($data['app_uri']) > 0) {
+            foreach ($data['app_uri'] as $kk => $vv) if (in_array($vv, $uri)) unset($data['app_uri'][$kk]);
+        }
+        $file = "{$this->app->getRootPath()}runtime/config.json";
+        $data['app_run'] = is_null($run) ? $data['app_run'] : $run;
+        $data['app_map'] = is_null($map) ? [] : array_merge($data['app_map'], $map);
+        $data['app_uri'] = is_null($uri) ? [] : array_merge($data['app_uri'], $uri);
+        file_put_contents($file, json_encode($data, JSON_UNESCAPED_UNICODE));
+        return $this->bindRuntime($data);
+    }
+
+    /**
+     * 获取实时运行配置
+     * @param null|string $key
+     * @return array
+     */
+    public function getRuntime($key = null)
+    {
+        $file = "{$this->app->getRootPath()}runtime/config.json";
+        $data = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+        if (empty($data) || !is_array($data)) $data = [];
+        if (empty($data['app_map']) || !is_array($data['app_map'])) $data['app_map'] = [];
+        if (empty($data['app_uri']) || !is_array($data['app_uri'])) $data['app_uri'] = [];
+        if (empty($data['app_run']) || !is_string($data['app_run'])) $data['app_run'] = 'developer';
+        return is_null($key) ? $data : (isset($data[$key]) ? $data[$key] : null);
+    }
+
+    /**
+     * 绑定应用实时配置
+     * @param array $data 配置数据
+     * @return boolean 是否调试模式
+     */
+    public function bindRuntime($data = [])
+    {
+        if (empty($data)) $data = $this->getRuntime();
+        // 动态绑定应用
+        if (!empty($data['app_map'])) {
+            $maps = $this->app->config->get('app.app_map', []);
+            if (is_array($maps) && count($maps) > 0 && count($data['app_map']) > 0) {
+                foreach ($maps as $kk => $vv) if (in_array($vv, $data['app_map'])) unset($maps[$kk]);
+            }
+            $this->app->config->set(['app_map' => array_merge($maps, $data['app_map'])], 'app');
+        }
+        // 动态绑定域名
+        if (!empty($data['app_uri'])) {
+            $uris = $this->app->config->get('app.domain_bind', []);
+            if (is_array($uris) && count($uris) > 0 && count($data['app_uri']) > 0) {
+                foreach ($uris as $kk => $vv) if (in_array($vv, $data['app_uri'])) unset($uris[$kk]);
+            }
+            $this->app->config->set(['domain_bind' => array_merge($uris, $data['app_uri'])], 'app');
+        }
+        // 动态设置运行模式
+        return $this->app->debug($data['app_run'] !== 'product')->isDebug();
     }
 
 }

@@ -62,7 +62,7 @@ class Library extends Service
                 } elseif (AdminService::instance()->isLogin()) {
                     return json(['code' => 0, 'msg' => lang('think_library_not_auth')])->header($header);
                 } else {
-                    return json(['code' => 0, 'msg' => lang('think_library_not_login'), 'url' => url('@admin/login')->build()])->header($header);
+                    return json(['code' => 0, 'msg' => lang('think_library_not_login'), 'url' => sysuri('admin/login/index')])->header($header);
                 }
             }, 'route');
         }
@@ -76,6 +76,8 @@ class Library extends Service
      */
     public function boot()
     {
+        // 动态绑定运行配置
+        SystemService::instance()->bindRuntime();
         // 注册系统任务指令
         $this->commands([
             'think\admin\command\Install',
