@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:22:53
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class QueryHepler
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\helper\QueryHelper.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -150,11 +154,7 @@ class QueryHelper extends Helper
     public function dateBetween($fields, $split = ' - ', $input = 'request', $alias = '#')
     {
         return $this->setBetweenWhere($fields, $split, $input, $alias, function ($value, $type) {
-            if ($type === 'after') {
-                return "{$value} 23:59:59";
-            } else {
-                return "{$value} 00:00:00";
-            }
+            return $type === 'after' ? "{$value} 23:59:59" : "{$value} 00:00:00";
         });
     }
 
@@ -169,11 +169,7 @@ class QueryHelper extends Helper
     public function timeBetween($fields, $split = ' - ', $input = 'request', $alias = '#')
     {
         return $this->setBetweenWhere($fields, $split, $input, $alias, function ($value, $type) {
-            if ($type === 'after') {
-                return strtotime("{$value} 23:59:59");
-            } else {
-                return strtotime("{$value} 00:00:00");
-            }
+            return $type === 'after' ? strtotime("{$value} 23:59:59") : strtotime("{$value} 00:00:00");
         });
     }
 

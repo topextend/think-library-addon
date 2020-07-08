@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:30:13
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class Controller
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\Controller.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin;
 
 use think\admin\helper\DeleteHelper;
@@ -78,6 +82,7 @@ abstract class Controller extends \stdClass
         if (in_array($this->request->action(), get_class_methods(__CLASS__))) {
             $this->error('Access without permission.');
         }
+        $this->csrf_message = lang('think_library_csrf_error');
         $this->initialize();
     }
 
@@ -86,9 +91,6 @@ abstract class Controller extends \stdClass
      */
     protected function initialize()
     {
-        if (empty($this->csrf_message)) {
-            $this->csrf_message = lang('think_library_csrf_error');
-        }
     }
 
     /**
@@ -286,7 +288,7 @@ abstract class Controller extends \stdClass
      * @param integer $rscript 任务类型(0单例,1多例)
      * @param integer $loops 循环等待时间
      */
-    protected function _queue($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
+    protected function _queue($title, $command, $later = 0, $data = [], $rscript = 0, $loops = 0)
     {
         try {
             $queue = QueueService::instance()->register($title, $command, $later, $data, $rscript, $loops);

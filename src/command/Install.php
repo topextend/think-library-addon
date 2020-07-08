@@ -1,19 +1,23 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:19:23
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class Install
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\command\Install.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\command;
 
+use think\admin\Command;
 use think\admin\service\InstallService;
-use think\console\Command;
 use think\console\Input;
 use think\console\input\Argument;
 use think\console\Output;
@@ -85,8 +89,8 @@ class Install extends Command
     protected function configure()
     {
         $this->setName('xadmin:install');
-        $this->setDescription("Install or update thinkamdin module");
         $this->addArgument('name', Argument::OPTIONAL, 'ModuleName', '');
+        $this->setDescription("Source code Install and Update for ThinkAdmin");
     }
 
     protected function execute(Input $input, Output $output)
@@ -101,8 +105,8 @@ class Install extends Command
             }
             [$this->installFile(), $this->installData()];
         } elseif (isset($this->bind[$this->name])) {
-            $this->rules = empty($this->bind[$this->name]['rules']) ? [] : $this->bind[$this->name]['rules'];
-            $this->ignore = empty($this->bind[$this->name]['ignore']) ? [] : $this->bind[$this->name]['ignore'];
+            $this->rules = $this->bind[$this->name]['rules'] ?? [];
+            $this->ignore = $this->bind[$this->name]['ignore'] ?? [];
             [$this->installFile(), $this->installData()];
         } else {
             $this->output->writeln("The specified module {$this->name} is not configured with installation rules");
@@ -129,7 +133,6 @@ class Install extends Command
 
     protected function installData()
     {
-
     }
 
 }

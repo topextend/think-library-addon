@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:27:06
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class NodeService
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\service\NodeService.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\service;
 
 use think\admin\Service;
@@ -65,7 +69,23 @@ class NodeService extends Service
     }
 
     /**
-     * 控制器方法扫描处理
+     * 获取应用列表
+     * @param array $data
+     * @return array
+     */
+    public function getModules($data = [])
+    {
+        if ($handle = opendir($this->app->getBasePath())) {
+            while (false !== ($file = readdir($handle))) if ($file !== "." && $file !== "..") {
+                if (is_dir($this->app->getBasePath() . $file)) $data[] = $file;
+            }
+            closedir($handle);
+        }
+        return $data;
+    }
+
+    /**
+     * 获取所有控制器入口
      * @param boolean $force
      * @return array
      * @throws \ReflectionException
@@ -81,7 +101,7 @@ class NodeService extends Service
             $data = [];
         }
         $ignores = get_class_methods('\think\admin\Controller');
-        foreach ($this->_scanDirectory(dirname($this->app->getAppPath())) as $file) {
+        foreach ($this->_scanDirectory($this->app->getBasePath()) as $file) {
             if (preg_match("|/(\w+)/(\w+)/controller/(.+)\.php$|i", $file, $matches)) {
                 list(, $namespace, $appname, $classname) = $matches;
                 $class = new \ReflectionClass(strtr("{$namespace}/{$appname}/controller/{$classname}", '/', '\\'));
@@ -100,8 +120,8 @@ class NodeService extends Service
 
     /**
      * 解析硬节点属性
-     * @param string $comment
-     * @param string $default
+     * @param string $comment 备注内容
+     * @param string $default 默认标题
      * @return array
      */
     private function _parseComment($comment, $default = '')
@@ -112,7 +132,7 @@ class NodeService extends Service
             $title = $default;
         }
         return [
-            'title'   => $title ? $title : $default,
+            'title'   => $title ?: $default,
             'isauth'  => intval(preg_match('/@auth\s*true/i', $text)),
             'ismenu'  => intval(preg_match('/@menu\s*true/i', $text)),
             'islogin' => intval(preg_match('/@login\s*true/i', $text)),
@@ -130,7 +150,7 @@ class NodeService extends Service
     {
         foreach (glob("{$path}*") as $item) {
             if (is_dir($item)) {
-                $data = array_merge($data, $this->_scanDirectory("{$item}/"));
+                $data = array_merge($data, $this->_scanDirectory("{$item}" . DIRECTORY_SEPARATOR));
             } elseif (is_file($item) && pathinfo($item, PATHINFO_EXTENSION) === $ext) {
                 $data[] = strtr($item, '\\', '/');
             }

@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:26:03
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class CaptchaService
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\service\CaptchaService.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\service;
 
 use think\admin\Service;
@@ -35,14 +39,14 @@ class CaptchaService extends Service
      * @param array $config
      * @return static
      */
-    protected function initialize($config = [])
+    public function initialize($config = [])
     {
         // 动态配置属性
         foreach ($config as $k => $v) if (isset($this->$k)) $this->$k = $v;
         // 生成验证码序号
         $this->uniqid = uniqid('captcha') . mt_rand(1000, 9999);
         // 生成验证码字符串
-        $length = strlen($this->charset) - 1;
+        list($this->code, $length) = ['', strlen($this->charset) - 1];
         for ($i = 0; $i < $this->length; $i++) {
             $this->code .= $this->charset[mt_rand(0, $length)];
         }

@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:29:52
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class Command
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\Command.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin;
 
 use think\admin\service\ProcessService;
@@ -23,7 +27,7 @@ use think\console\Output;
  * Class Command
  * @package think\admin
  */
-class Command extends ThinkCommand
+abstract class Command extends ThinkCommand
 {
     /**
      * 任务控制服务
@@ -41,26 +45,16 @@ class Command extends ThinkCommand
      * 初始化指令变量
      * @param Input $input
      * @param Output $output
-     */
-    protected function initialize(Input $input, Output $output)
-    {
-        $this->queue = QueueService::instance();
-        $this->process = ProcessService::instance();
-    }
-
-    /**
-     * 设置当前任务进度
-     * @param null|integer $status 任务状态
-     * @param null|string $message 进度消息
-     * @param null|integer $progress 进度数值
-     * @return Command
+     * @return $this
      * @throws Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function setQueueProgress($status = null, $message = null, $progress = null)
+    protected function initialize(Input $input, Output $output)
     {
+        $this->queue = QueueService::instance();
+        $this->process = ProcessService::instance();
         if (defined('WorkQueueCode')) {
             if (!$this->queue instanceof QueueService) {
                 $this->queue = QueueService::instance();
@@ -68,24 +62,20 @@ class Command extends ThinkCommand
             if ($this->queue->code !== WorkQueueCode) {
                 $this->queue->initialize(WorkQueueCode);
             }
-            $this->queue->progress($status, $message, $progress);
-        } elseif (is_string($message)) {
-            $this->output->writeln($message);
         }
         return $this;
     }
 
     /**
-     * 结束任务并设置状态消息
-     * @param integer $status 任务状态
-     * @param string $message 消息内容
+     * 设置进度消息并继续执行
+     * @param null|string $message 进度消息
+     * @param null|integer $progress 进度数值
      * @return Command
-     * @throws Exception
      */
-    protected function setQueueMessage($status, $message)
+    protected function setQueueProgress($message = null, $progress = null)
     {
         if (defined('WorkQueueCode')) {
-            throw new Exception($message, $status, WorkQueueCode);
+            $this->queue->progress(2, $message, $progress);
         } elseif (is_string($message)) {
             $this->output->writeln($message);
         }
@@ -93,25 +83,35 @@ class Command extends ThinkCommand
     }
 
     /**
-     * 设置成功的消息
+     * 设置失败消息并结束进程
      * @param string $message 消息内容
      * @return Command
      * @throws Exception
      */
-    protected function setQueueSuccessMessage($message)
+    protected function setQueueError($message)
     {
-        return $this->setQueueMessage(3, $message);
+        if (defined('WorkQueueCode')) {
+            throw new Exception($message, 4, WorkQueueCode);
+        } elseif (is_string($message)) {
+            $this->output->writeln($message);
+        }
+        return $this;
     }
 
     /**
-     * 设置失败的消息
+     * 设置成功消息并结束进程
      * @param string $message 消息内容
      * @return Command
      * @throws Exception
      */
-    protected function setQueueErrorMessage($message)
+    protected function setQueueSuccess($message)
     {
-        return $this->setQueueMessage(4, $message);
+        if (defined('WorkQueueCode')) {
+            throw new Exception($message, 3, WorkQueueCode);
+        } elseif (is_string($message)) {
+            $this->output->writeln($message);
+        }
+        return $this;
     }
 
 }

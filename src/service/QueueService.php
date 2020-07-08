@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:28:04
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class QueueService
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\service\QueueService.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\service;
 
 use think\admin\extend\CodeExtend;
@@ -45,7 +49,7 @@ class QueueService extends Service
      * 当前任务数据
      * @var array
      */
-    public $queue = [];
+    public $record = [];
 
     /**
      * 数据初始化
@@ -60,25 +64,15 @@ class QueueService extends Service
     {
         if (!empty($code)) {
             $this->code = $code;
-            $this->queue = $this->app->db->name('SystemQueue')->where(['code' => $this->code])->find();
-            if (empty($this->queue)) {
+            $this->record = $this->app->db->name('SystemQueue')->where(['code' => $this->code])->find();
+            if (empty($this->record)) {
                 $this->app->log->error("Qeueu initialize failed, Queue {$code} not found.");
                 throw new \think\admin\Exception("Qeueu initialize failed, Queue {$code} not found.");
             }
-            $this->code = $this->queue['code'];
-            $this->title = $this->queue['title'];
-            $this->data = json_decode($this->queue['exec_data'], true) ?: [];
+            [$this->code, $this->title] = [$this->record['code'], $this->record['title']];
+            $this->data = json_decode($this->record['exec_data'], true) ?: [];
         }
         return $this;
-    }
-
-    /**
-     * 判断是否WIN环境
-     * @return boolean
-     */
-    protected function iswin()
-    {
-        return ProcessService::instance()->iswin();
     }
 
     /**
@@ -92,12 +86,11 @@ class QueueService extends Service
      */
     public function reset($wait = 0)
     {
-        if (empty($this->queue)) {
+        if (empty($this->record)) {
             $this->app->log->error("Qeueu reset failed, Queue {$this->code} data cannot be empty!");
             throw new \think\admin\Exception("Qeueu reset failed, Queue {$this->code} data cannot be empty!");
         }
-        $map = ['code' => $this->code];
-        $this->app->db->name('SystemQueue')->where($map)->strict(false)->failException(true)->update([
+        $this->app->db->name('SystemQueue')->where(['code' => $this->code])->strict(false)->failException(true)->update([
             'exec_pid' => '0', 'exec_time' => time() + $wait, 'status' => '1',
         ]);
         return $this->initialize($this->code);
@@ -113,7 +106,7 @@ class QueueService extends Service
      */
     public function addCleanQueue()
     {
-        return $this->register('定时清理系统任务数据', "xtask:clean", 0, [], 0, 3600);
+        return $this->register('定时清理系统任务数据', "xadmin:queue clean", 0, [], 0, 3600);
     }
 
     /**
@@ -130,7 +123,7 @@ class QueueService extends Service
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function register($title, $command, $later = 0, $data = [], $rscript = 1, $loops = 0)
+    public function register($title, $command, $later = 0, $data = [], $rscript = 0, $loops = 0)
     {
         $map = [['title', '=', $title], ['status', 'in', ['1', '2']]];
         if (empty($rscript) && ($queue = $this->app->db->name('SystemQueue')->where($map)->find())) {

@@ -1,18 +1,23 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:30:42
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class Library
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\Library.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin;
 
 use think\admin\service\AdminService;
+use think\admin\service\SystemService;
 use think\middleware\SessionInit;
 use think\Request;
 use think\Service;
@@ -26,7 +31,23 @@ use function Composer\Autoload\includeFile;
 class Library extends Service
 {
     /**
-     * 注册初始化服务
+     * 启动服务
+     */
+    public function boot()
+    {
+        // 动态绑定运行配置
+        SystemService::instance()->bindRuntime();
+        // 注册系统任务指令
+        $this->commands([
+            'think\admin\command\Queue',
+            'think\admin\command\Install',
+            'think\admin\command\Version',
+            'think\admin\command\Database',
+        ]);
+    }
+
+    /**
+     * 初始化服务
      */
     public function register()
     {
@@ -67,32 +88,7 @@ class Library extends Service
             }, 'route');
         }
         // 动态加入应用函数
-        $sysRule = "{$this->app->getAppPath()}*/sys.php";
+        $sysRule = "{$this->app->getBasePath()}*/sys.php";
         foreach (glob($sysRule) as $file) includeFile($file);
-    }
-
-    /**
-     * 启动服务
-     */
-    public function boot()
-    {
-        // 动态绑定运行配置
-        SystemService::instance()->bindRuntime();
-        // 注册系统任务指令
-        $this->commands([
-            'think\admin\command\Install',
-            'think\admin\command\Version',
-            // 系统异步任务指令
-            'think\admin\command\queue\CleanQueue',
-            'think\admin\command\queue\WorkQueue',
-            'think\admin\command\queue\StopQueue',
-            'think\admin\command\queue\StateQueue',
-            'think\admin\command\queue\StartQueue',
-            'think\admin\command\queue\QueryQueue',
-            'think\admin\command\queue\ListenQueue',
-            // 数据库表优化指令
-            'think\admin\command\database\Optimize',
-            'think\admin\command\database\Repair',
-        ]);
     }
 }

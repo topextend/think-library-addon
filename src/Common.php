@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:30:03
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class Common
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\Common.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 use think\admin\extend\HttpExtend;
 use think\admin\service\AdminService;
 use think\admin\service\QueueService;
@@ -123,7 +127,7 @@ if (!function_exists('systoken')) {
     function systoken($node = null)
     {
         $result = TokenService::instance()->buildFormToken($node);
-        return isset($result['token']) ? $result['token'] : '';
+        return $result['token'] ?? '';
     }
 }
 if (!function_exists('sysoplog')) {
@@ -276,6 +280,6 @@ if (!function_exists('down_file')) {
     function down_file($source, $force = false, $expire = 0)
     {
         $result = Storage::down($source, $force, $expire);
-        return isset($result['url']) ? $result['url'] : $source;
+        return $result['url'] ?? $source;
     }
 }

@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:26:27
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class InstallService
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\service\InstallService.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\service;
 
 use think\admin\extend\HttpExtend;
@@ -23,7 +27,7 @@ use think\admin\Service;
 class InstallService extends Service
 {
     /**
-     * 目录地址
+     * 代码地址
      * @var string
      */
     protected $uri;
@@ -108,7 +112,7 @@ class InstallService extends Service
      */
     private function downloadFile($encode)
     {
-        $result = json_decode(HttpExtend::get("{$this->uri}?s=api/update/get&encode={$encode}"), true);
+        $result = json_decode(HttpExtend::get("{$this->uri}?s=admin/api.update/get&encode={$encode}"), true);
         if (empty($result['code'])) return false;
         $filename = $this->path . decode($encode);
         file_exists(dirname($filename)) || mkdir(dirname($filename), 0755, true);
@@ -135,8 +139,8 @@ class InstallService extends Service
     public function grenerateDifference($rules = [], $ignore = [])
     {
         list($this->rules, $this->ignore, $data) = [$rules, $ignore, []];
-        $result = json_decode(HttpExtend::post("{$this->uri}?s=/api/update/tree", [
-            'rules' => serialize($this->rules), 'ignore' => serialize($this->ignore),
+        $result = json_decode(HttpExtend::post("{$this->uri}?s=/admin/api.update/node", [
+            'rules' => json_encode($this->rules), 'ignore' => json_encode($this->ignore),
         ]), true);
         if (!empty($result['code'])) {
             $new = $this->getList($result['data']['rules'], $result['data']['ignore']);

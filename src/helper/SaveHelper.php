@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:23:18
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class SaveHelper
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\helper\SaveHelper.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -59,8 +63,8 @@ class SaveHelper extends Helper
     {
         $this->where = $where;
         $this->query = $this->buildQuery($dbQuery);
-        $this->data = empty($data) ? $this->app->request->post() : $data;
-        $this->field = empty($field) ? $this->query->getPk() : $field;
+        $this->field = $field ?: $this->query->getPk();
+        $this->data = $data ?: $this->app->request->post();
         $this->value = $this->app->request->post($this->field, null);
         // 主键限制处理
         if (!isset($this->where[$this->field]) && is_string($this->value)) {

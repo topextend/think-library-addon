@@ -1,19 +1,23 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:20:46
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class ExcelExtend
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\extend\ExcelExtend.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\extend;
 
 /**
- * 转出CSV文件扩展
+ * 导出CSV文件扩展
  * Class ExcelExtend
  * @package think\admin\extend
  */
@@ -62,7 +66,7 @@ class ExcelExtend
     public static function parseKeyDotValue(array $data, $rule)
     {
         list($temp, $attr) = [$data, explode('.', trim($rule, '.'))];
-        while ($key = array_shift($attr)) $temp = isset($temp[$key]) ? $temp[$key] : $temp;
+        while ($key = array_shift($attr)) $temp = $temp[$key] ?? $temp;
         return (is_string($temp) || is_numeric($temp)) ? @iconv('utf-8', 'gbk//TRANSLIT', "{$temp}") : '';
     }
 }

@@ -1,15 +1,19 @@
 <?php
-
-// +----------------------------------------------------------------------
-// | Ladmin
-// +----------------------------------------------------------------------
-// | 官方网站: http://www.ladmin.cn
-// +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://github.com/topextend/ladmin
-// +----------------------------------------------------------------------
-
+// -----------------------------------------------------------------------
+// |Author       : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Date         : 2020-07-08 16:36:17
+// |----------------------------------------------------------------------
+// |LastEditTime : 2020-07-08 17:23:01
+// |----------------------------------------------------------------------
+// |LastEditors  : Jarmin <edshop@qq.com>
+// |----------------------------------------------------------------------
+// |Description  : Class FormHelper
+// |----------------------------------------------------------------------
+// |FilePath     : \think-library\src\helper\FormHelper.php
+// |----------------------------------------------------------------------
+// |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
+// -----------------------------------------------------------------------
 namespace think\admin\helper;
 
 use think\admin\Helper;
@@ -68,8 +72,8 @@ class FormHelper extends Helper
     {
         $this->query = $this->buildQuery($dbQuery);
         list($this->template, $this->where, $this->data) = [$template, $where, $data];
-        $this->field = empty($field) ? ($this->query->getPk() ? $this->query->getPk() : 'id') : $field;;
-        $this->value = input($this->field, isset($data[$this->field]) ? $data[$this->field] : null);
+        $this->field = $field ?: ($this->query->getPk() ?: 'id');
+        $this->value = input($this->field, $data[$this->field] ?? null);
         // GET请求, 获取数据并显示表单页面
         if ($this->app->request->isGet()) {
             if ($this->value !== null) {
