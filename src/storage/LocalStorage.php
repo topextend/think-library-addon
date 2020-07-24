@@ -95,7 +95,7 @@ class LocalStorage extends Storage
     public function get($name, $safe = false)
     {
         if (!$this->has($name, $safe)) return '';
-        return file_get_contents($this->path($name, $safe));
+        return static::curlGet($this->path($name, $safe));
     }
 
     /**
@@ -170,7 +170,7 @@ class LocalStorage extends Storage
      */
     public function upload()
     {
-        return url('admin/api.upload/file')->build();
+        return url('api/upload/file')->build();
     }
 
 }

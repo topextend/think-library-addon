@@ -89,7 +89,7 @@ abstract class Storage
      */
     public static function __callStatic($method, $arguments)
     {
-        if (method_exists($class = self::instance(), $method)) {
+        if (method_exists($class = static::instance(), $method)) {
             return call_user_func_array([$class, $method], $arguments);
         } else {
             throw new Exception("method not exists: " . get_class($class) . "->{$method}()");
@@ -142,14 +142,14 @@ abstract class Storage
     {
         try {
             $file = LocalStorage::instance();
-            $name = self::name($url, '', 'down/');
+            $name = static::name($url, '', 'down/');
             if (empty($force) && $file->has($name)) {
                 if ($expire < 1 || filemtime($file->path($name)) + $expire > time()) {
                     return $file->info($name);
                 }
             }
-            return $file->set($name, file_get_contents($url));
-        } catch (\Exception $e) {
+            return $file->set($name, static::curlGet($url));
+        } catch (\Exception $exception) {
             return ['url' => $url, 'hash' => md5($url), 'key' => $url, 'file' => $url];
         }
     }
@@ -162,7 +162,7 @@ abstract class Storage
      */
     public static function mime($exts, $mime = [])
     {
-        $mimes = self::mimes();
+        $mimes = static::mimes();
         foreach (is_string($exts) ? explode(',', $exts) : $exts as $ext) {
             $mime[] = $mimes[strtolower($ext)] ?? 'application/octet-stream';
         }
@@ -178,6 +178,24 @@ abstract class Storage
         static $mimes = [];
         if (count($mimes) > 0) return $mimes;
         return $mimes = include __DIR__ . '/storage/bin/mimes.php';
+    }
+
+    /**
+     * 使用CURL读取网络资源
+     * @param string $url
+     * @return string
+     */
+    public static function curlGet($url)
+    {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        list($content) = [curl_exec($ch), curl_close($ch)];
+        return $content;
     }
 
     /**
