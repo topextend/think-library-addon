@@ -54,7 +54,7 @@ class Library extends Service
         $this->commands(['build' => Build::class, 'clear' => Clear::class]);
         // 注册 ThinkAdmin 指令
         $this->commands([Queue::class, Install::class, Version::class, Database::class]);
-        // 动态应用配置参数
+        // 动态应用运行参数
         SystemService::instance()->bindRuntime();
     }
 
@@ -74,11 +74,11 @@ class Library extends Service
                 $this->app->request->setPathinfo($_SERVER['argv'][1]);
             }
         } else {
-            // 注册语言包处理中间键
-            $this->app->middleware->add(LoadLangPack::class);
-            // 注册会话初始化中间键
             if ($this->app->request->request('not_init_session', 0) == 0) {
+                // 注册会话初始化中间键
                 $this->app->middleware->add(SessionInit::class);
+                // 注册语言包处理中间键
+                $this->app->middleware->add(LoadLangPack::class);
             }
             // 注册访问处理中间键
             $this->app->middleware->add(function (Request $request, \Closure $next) {

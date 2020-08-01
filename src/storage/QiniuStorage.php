@@ -32,7 +32,6 @@ class QiniuStorage extends Storage
 
     /**
      * 初始化入口
-     * @return static
      * @throws \think\admin\Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
@@ -51,8 +50,6 @@ class QiniuStorage extends Storage
         elseif ($type === 'http') $this->prefix = "http://{$domain}";
         elseif ($type === 'https') $this->prefix = "https://{$domain}";
         else throw new \think\admin\Exception('未配置七牛云URL域名哦');
-        // 初始化配置并返回当前实例
-        return parent::initialize();
     }
 
     /**

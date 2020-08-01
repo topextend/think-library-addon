@@ -28,7 +28,6 @@ class LocalStorage extends Storage
 
     /**
      * 初始化入口
-     * @return static
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -44,7 +43,6 @@ class LocalStorage extends Storage
             elseif ($type === 'http') $this->prefix = "http://{$domain}";
             elseif ($type === 'https') $this->prefix = "https://{$domain}";
         }
-        return parent::initialize();
     }
 
     /**

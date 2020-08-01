@@ -58,24 +58,21 @@ abstract class Storage
     /**
      * Storage constructor.
      * @param App $app
-     */
-    public function __construct(App $app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * 存储初始化
-     * @return static
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    protected function initialize()
+    public function __construct(App $app)
     {
+        $this->app = $app;
         $this->linkType = sysconf('storage.link_type');
-        return $this;
+        $this->initialize();
     }
+
+    /**
+     * 存储驱动初始化
+     */
+    abstract protected function initialize();
 
     /**
      * 静态访问启用
@@ -107,9 +104,9 @@ abstract class Storage
      */
     public static function instance($name = null)
     {
-        $class = ucfirst(strtolower(is_null($name) ? sysconf('storage.type') : $name));
+        $class = ucfirst(strtolower($name ?: sysconf('storage.type')));
         if (class_exists($object = "think\\admin\\storage\\{$class}Storage")) {
-            return Container::getInstance()->make($object)->initialize();
+            return Container::getInstance()->make($object);
         } else {
             throw new Exception("File driver [{$class}] does not exist.");
         }
