@@ -283,3 +283,25 @@ if (!function_exists('down_file')) {
         return $result['url'] ?? $source;
     }
 }
+if (!function_exists('get_dir')) {
+    /**
+     * 获取目录列表
+     * @param string $dir_name 目录路径
+     * @return array
+     */
+    function get_dir($dir_name)
+    {
+        $dir_array = [];        
+        if (false != ($handle = opendir($dir_name))) {            
+            $i = 0;            
+            while (false !== ($file = readdir($handle))) {                
+                if ($file != "." && $file != ".."&&!strpos($file,".")) {                    
+                    $dir_array[$i] = $file;                    
+                    $i++;
+                }
+            }            
+            closedir($handle);
+        }        
+        return $dir_array;
+    }
+}
