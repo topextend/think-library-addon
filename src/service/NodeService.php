@@ -95,13 +95,18 @@ class NodeService extends Service
         static $data = [];
         if (empty($force)) {
             if (count($data) > 0) return $data;
-            $data = $this->app->cache->get('system_auth_node', []);
+            $data = $this->app->cache->get('SystemAuthNode', []);
             if (count($data) > 0) return $data;
         } else {
             $data = [];
         }
         $ignores = get_class_methods('\think\admin\Controller');
-        foreach ($this->_scanDirectory($this->app->getBasePath()) as $file) {
+        if(!is_dir($this->app->addons->getAddonsPath())){
+            $path = $this->_scanDirectory($this->app->getBasePath());
+        } else {
+            $path = array_merge($this->_scanDirectory($this->app->getBasePath()),$this->_scanDirectory($this->app->addons->getAddonsPath()));
+        }
+        foreach ($path as $file) {
             if (preg_match("|/(\w+)/(\w+)/controller/(.+)\.php$|i", $file, $matches)) {
                 list(, $namespace, $appname, $classname) = $matches;
                 $class = new \ReflectionClass(strtr("{$namespace}/{$appname}/controller/{$classname}", '/', '\\'));
@@ -114,7 +119,7 @@ class NodeService extends Service
             }
         }
         $data = array_change_key_case($data, CASE_LOWER);
-        $this->app->cache->set('system_auth_node', $data);
+        $this->app->cache->set('SystemAuthNode', $data);
         return $data;
     }
 
