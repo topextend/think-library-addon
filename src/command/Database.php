@@ -16,7 +16,7 @@
 // -----------------------------------------------------------------------
 namespace think\admin\command;
 
-use think\admin\Command;
+use think\admin\Command1;
 use think\console\Input;
 use think\console\input\Argument;
 use think\console\Output;
