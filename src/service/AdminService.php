@@ -96,7 +96,7 @@ class AdminService extends Service
         [$nodes, $pnodes, $methods] = [[], [], array_reverse(NodeService::instance()->getMethods())];
         foreach ($methods as $node => $method) {
             [$count, $pnode] = [substr_count($node, '/'), substr($node, 0, strripos($node, '/'))];
-            if ($count === 2 && !empty($method['isauth'])) {
+            if ($count === 3 || $count === 2 && !empty($method['isauth'])) {
                 in_array($pnode, $pnodes) or array_push($pnodes, $pnode);
                 $nodes[$node] = ['node' => $node, 'title' => $method['title'], 'pnode' => $pnode, 'checked' => in_array($node, $checkeds)];
             } elseif ($count === 1 && in_array($pnode, $pnodes)) {

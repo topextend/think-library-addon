@@ -110,7 +110,13 @@ class NodeService extends Service
             if (preg_match("|/(\w+)/(\w+)/controller/(.+)\.php$|i", $file, $matches)) {
                 list(, $namespace, $appname, $classname) = $matches;
                 $class = new \ReflectionClass(strtr("{$namespace}/{$appname}/controller/{$classname}", '/', '\\'));
-                $prefix = strtr("{$appname}/{$this->nameTolower($classname)}", '\\', '/');
+                if (strpos($file,'addons') === false)
+                {
+                    $prefix = strtr("{$appname}/{$this->nameTolower($classname)}", '\\', '/');
+                }
+                else{
+                    $prefix = strtr("addons/{$appname}/{$this->nameTolower($classname)}", '\\', '/');
+                }
                 $data[$prefix] = $this->_parseComment($class->getDocComment(), $classname);
                 foreach ($class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
                     if (in_array($metname = $method->getName(), $ignores)) continue;
