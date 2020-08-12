@@ -27,25 +27,25 @@ use think\admin\Service;
 class InstallService extends Service
 {
     /**
-     * 代码地址
-     * @var string
-     */
-    protected $uri;
-
-    /**
      * 项目根目录
      * @var string
      */
-    protected $path;
+    protected $root;
 
     /**
-     * 当前版本号
+     * 线上服务器地址
+     * @var string
+     */
+    protected $server;
+
+    /**
+     * 当前大版本号
      * @var string
      */
     protected $version;
 
     /**
-     * 文件规则
+     * 更新规则
      * @var array
      */
     protected $rules = [];
@@ -58,18 +58,24 @@ class InstallService extends Service
 
     /**
      * 初始化服务
-     * @return $this
      */
     protected function initialize()
     {
         // 应用框架版本
-        $this->version = $this->app->config->get('app.thinkadmin_ver');
-        if (empty($this->version)) $this->version = 'v4';
+        $this->version = $this->app->config->get('app.padmin_ver') ?: 'v4';
         // 线上应用代码
-        $this->uri = "https://{$this->version}.padmin.cn";
-        // 当前应用根目录
-        $this->path = strtr($this->app->getRootPath(), '\\', '/');
-        return $this;
+        $this->server = "https://{$this->version}.padmin.cn";
+        // 应用根目录
+        $this->root = strtr($this->app->getRootPath(), '\\', '/');
+    }
+
+    /**
+     * 获取线上接口
+     * @return string
+     */
+    public function getServer()
+    {
+        return $this->server;
     }
 
     /**
@@ -82,11 +88,11 @@ class InstallService extends Service
     }
 
     /**
-     * 同步更新文件
-     * @param array $file
+     * 下载并更新文件
+     * @param array $file 文件信息
      * @return array
      */
-    public function fileSynchronization($file)
+    public function updateFileByDownload(array $file): array
     {
         if (in_array($file['type'], ['add', 'mod'])) {
             if ($this->downloadFile(encode($file['name']))) {
@@ -95,7 +101,7 @@ class InstallService extends Service
                 return [false, $file['type'], $file['name']];
             }
         } elseif (in_array($file['type'], ['del'])) {
-            $real = $this->path . $file['name'];
+            $real = $this->root . $file['name'];
             if (is_file($real) && unlink($real)) {
                 $this->removeEmptyDirectory(dirname($real));
                 return [true, $file['type'], $file['name']];
@@ -112,9 +118,10 @@ class InstallService extends Service
      */
     private function downloadFile($encode)
     {
-        $result = json_decode(HttpExtend::get("{$this->uri}?s=api/update/get&encode={$encode}"), true);
+        $source = "{$this->server}/api/update/get?encode={$encode}";
+        $result = json_decode(HttpExtend::get($source), true);
         if (empty($result['code'])) return false;
-        $filename = $this->path . decode($encode);
+        $filename = $this->root . decode($encode);
         file_exists(dirname($filename)) || mkdir(dirname($filename), 0755, true);
         return file_put_contents($filename, base64_decode($result['data']['content']));
     }
@@ -136,10 +143,10 @@ class InstallService extends Service
      * @param array $ignore 忽略规则
      * @return array
      */
-    public function grenerateDifference($rules = [], $ignore = [])
+    public function grenerateDifference(array $rules = [], array $ignore = []): array
     {
-        list($this->rules, $this->ignore, $data) = [$rules, $ignore, []];
-        $result = json_decode(HttpExtend::post("{$this->uri}?s=/api/update/node", [
+        [$this->rules, $this->ignore, $data] = [$rules, $ignore, []];
+        $result = json_decode(HttpExtend::post("{$this->server}/api/update/node", [
             'rules' => json_encode($this->rules), 'ignore' => json_encode($this->ignore),
         ]), true);
         if (!empty($result['code'])) {
@@ -159,24 +166,24 @@ class InstallService extends Service
      * @param array $local 本地文件列表信息
      * @return array
      */
-    private function grenerateDifferenceContrast(array $serve = [], array $local = [])
+    private function grenerateDifferenceContrast(array $serve = [], array $local = []): array
     {
         // 数据扁平化
-        list($_serve, $_local, $_new) = [[], [], []];
+        [$_serve, $_local, $_diffy] = [[], [], []];
         foreach ($serve as $t) $_serve[$t['name']] = $t;
         foreach ($local as $t) $_local[$t['name']] = $t;
         unset($serve, $local);
         // 线上数据差异计算
-        foreach ($_serve as $t) isset($_local[$t['name']]) ? array_push($_new, [
+        foreach ($_serve as $t) isset($_local[$t['name']]) ? array_push($_diffy, [
             'type' => $t['hash'] === $_local[$t['name']]['hash'] ? null : 'mod', 'name' => $t['name'],
-        ]) : array_push($_new, ['type' => 'add', 'name' => $t['name']]);
+        ]) : array_push($_diffy, ['type' => 'add', 'name' => $t['name']]);
         // 本地数据增量计算
-        foreach ($_local as $t) if (!isset($_serve[$t['name']])) array_push($_new, ['type' => 'del', 'name' => $t['name']]);
+        foreach ($_local as $t) if (!isset($_serve[$t['name']])) array_push($_diffy, ['type' => 'del', 'name' => $t['name']]);
         unset($_serve, $_local);
-        usort($_new, function ($a, $b) {
+        usort($_diffy, function ($a, $b) {
             return $a['name'] !== $b['name'] ? ($a['name'] > $b['name'] ? 1 : -1) : 0;
         });
-        return $_new;
+        return $_diffy;
     }
 
     /**
@@ -186,17 +193,18 @@ class InstallService extends Service
      * @param array $data 扫描结果列表
      * @return array
      */
-    public function getList(array $rules, array $ignore = [], array $data = [])
+    public function getList(array $rules, array $ignore = [], array $data = []): array
     {
         // 扫描规则文件
         foreach ($rules as $key => $rule) {
             $name = strtr(trim($rule, '\\/'), '\\', '/');
-            $data = array_merge($data, $this->scanList("{$this->path}{$name}"));
+            $data = array_merge($data, $this->scanList("{$this->root}{$name}"));
         }
         // 清除忽略文件
-        foreach ($data as $key => $item) foreach ($ignore as $ingore) {
-            if (stripos($item['name'], $ingore) === 0) unset($data[$key]);
+        foreach ($data as $key => $item) foreach ($ignore as $igr) {
+            if (stripos($item['name'], $igr) === 0) unset($data[$key]);
         }
+        // 返回文件数据
         return ['rules' => $rules, 'ignore' => $ignore, 'list' => $data];
     }
 
@@ -206,7 +214,7 @@ class InstallService extends Service
      * @param array $data 扫描结果
      * @return array
      */
-    private function scanList($path, $data = [])
+    private function scanList($path, $data = []): array
     {
         if (file_exists($path)) if (is_dir($path)) foreach (scandir($path) as $sub) {
             if (strpos($sub, '.') !== 0) if (is_dir($temp = "{$path}/{$sub}")) {
@@ -222,14 +230,14 @@ class InstallService extends Service
 
     /**
      * 获取指定文件信息
-     * @param string $filename
+     * @param string $realname 文件路径
      * @return array
      */
-    private function getInfo($filename)
+    private function getInfo($realname): array
     {
         return [
-            'name' => str_replace($this->path, '', $filename),
-            'hash' => md5(preg_replace('/\s+/', '', file_get_contents($filename))),
+            'name' => str_replace($this->root, '', $realname),
+            'hash' => md5(preg_replace('/\s+/', '', file_get_contents($realname))),
         ];
     }
 }
