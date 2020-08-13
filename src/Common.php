@@ -453,12 +453,12 @@ if (!function_exists('down_file')) {
         return $result['url'] ?? $source;
     }
 }
-if (!function_exists('get_addon_list')) {
+if (!function_exists('get_addons_list')) {
     /**
      * 获得插件列表
      * @return array
      */
-    function get_addon_list()
+    function get_addons_list()
     {
         $results = scandir(ADDON_PATH);
         $list = [];
