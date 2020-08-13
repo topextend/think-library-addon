@@ -2,62 +2,41 @@
 // -----------------------------------------------------------------------
 // |Author       : Jarmin <edshop@qq.com>
 // |----------------------------------------------------------------------
-// |Date         : 2020-07-08 16:36:17
+// |Date         : 2020-08-13 11:39:25
 // |----------------------------------------------------------------------
-// |LastEditTime : 2020-08-13 19:47:38
+// |LastEditTime : 2020-08-13 19:40:02
 // |----------------------------------------------------------------------
 // |LastEditors  : Jarmin <edshop@qq.com>
 // |----------------------------------------------------------------------
-// |Description  : Class Service
+// |Description  : Addons Middleware Class
 // |----------------------------------------------------------------------
-// |FilePath     : \think-library\src\Service.php
+// |FilePath     : \think-library\src\addons\middleware\Addons.php
 // |----------------------------------------------------------------------
 // |Copyright (c) 2020 http://www.ladmin.cn   All rights reserved. 
 // -----------------------------------------------------------------------
-namespace think\admin;
+namespace think\admin\addons\middleware;
 
 use think\App;
-use think\Container;
 
-/**
- * 自定义服务基类
- * Class Service
- * @package think\admin
- */
-abstract class Service
+class Addons
 {
-    /**
-     * 应用实例
-     * @var App
-     */
     protected $app;
 
-    /**
-     * Service constructor.
-     * @param App $app
-     */
     public function __construct(App $app)
     {
-        $this->app = $app;
-        $this->initialize();
+        $this->app  = $app;
     }
 
     /**
-     * 初始化服务
-     * @return $this
+     * 插件中间件
+     * @param $request
+     * @param \Closure $next
+     * @return mixed
      */
-    protected function initialize()
+    public function handle($request, \Closure $next)
     {
-        return $this;
-    }
+        hook('addon_middleware', $request);
 
-    /**
-     * 静态实例对象
-     * @param array $args
-     * @return static
-     */
-    public static function instance(...$args)
-    {
-        return Container::getInstance()->make(static::class, $args);
+        return $next($request);
     }
 }

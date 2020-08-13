@@ -4,7 +4,7 @@
 // |----------------------------------------------------------------------
 // |Date         : 2020-07-08 16:36:17
 // |----------------------------------------------------------------------
-// |LastEditTime : 2020-07-08 17:27:06
+// |LastEditTime : 2020-08-13 19:45:01
 // |----------------------------------------------------------------------
 // |LastEditors  : Jarmin <edshop@qq.com>
 // |----------------------------------------------------------------------
@@ -101,10 +101,10 @@ class NodeService extends Service
             $data = [];
         }
         $ignores = get_class_methods('\think\admin\Controller');
-        if(!is_dir($this->app->addons->getAddonsPath())){
+        if(!is_dir(ADDON_PATH)){
             $path = $this->_scanDirectory($this->app->getBasePath());
         } else {
-            $path = array_merge($this->_scanDirectory($this->app->getBasePath()),$this->_scanDirectory($this->app->addons->getAddonsPath()));
+            $path = array_merge($this->_scanDirectory($this->app->getBasePath()),$this->_scanDirectory(ADDON_PATH));
         }
         foreach ($path as $file) {
             if (preg_match("|/(\w+)/(\w+)/controller/(.+)\.php$|i", $file, $matches)) {

@@ -4,7 +4,7 @@
 // |----------------------------------------------------------------------
 // |Date         : 2020-07-08 16:36:17
 // |----------------------------------------------------------------------
-// |LastEditTime : 2020-07-08 17:25:01
+// |LastEditTime : 2020-08-13 19:43:01
 // |----------------------------------------------------------------------
 // |LastEditors  : Jarmin <edshop@qq.com>
 // |----------------------------------------------------------------------
@@ -29,4 +29,9 @@ return [
     'think_library_page_html'      => 'Total %s records, display %s per page, total %s page current display %s page.',
     'think_library_csrf_error'     => 'Form token validation failed, please refresh and try again later.',
     'think_library_queue_exist'    => 'Task has been created, please wait for processing to complete.',
+    'addon %s not found'           => 'addon %s not found',
+    'addon %s is disabled'         => 'addon %s is disabled',
+    'addon controller %s not found'=> 'addon controller %s not found',
+    'addon action %s not found'    => 'addon action %s not found',
+    'addon can not be empty'       => 'addon can not be empty',
 ];
