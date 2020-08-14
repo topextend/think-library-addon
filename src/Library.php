@@ -271,17 +271,11 @@ class Library extends Service
         $config   = Config::get('addons');
         if (!empty($config)){
             $database = $config['database'];
-
             //是否使用数据库加载钩子信息
             if (!$database) {
                 return true;
             }
-
-            $data = Db::name($database['table'])
-                ->where('status', 1)
-                ->cache($database['cache'], $database['expire'])
-                ->field(implode(',', $database['field']))
-                ->select();
+            $data = Db::name($database['table'])->where('status', 1)->cache($database['cache'], $database['expire'])->field(implode(',', $database['field']))->select();
             if (!$data->isEmpty()) {
                 foreach ($data as $key => $row) {
                     $config['hooks'] += [
