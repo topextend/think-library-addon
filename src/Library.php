@@ -76,6 +76,7 @@ class Library extends Service
     {
         // 插件目录
         define('ADDON_PATH', root_path() . 'addons' . DIRECTORY_SEPARATOR);
+        define('RUNTIME_PATH', root_path() . 'runtime' . DIRECTORY_SEPARATOR);
         // 输入默认过滤
         $this->app->request->filter(['trim']);
         // 加载中文语言
