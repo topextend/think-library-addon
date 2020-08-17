@@ -78,6 +78,13 @@ class AdminService extends Service
         foreach ($nodes as $key => $rule) if (stripos($key, '_') !== false) {
             $nodes[str_replace('_', '', $key)] = $rule;
         }
+        // 暂时性的匹配插件菜单验证登陆
+        if ($real === 'index//') {
+            $nodes[$real]['title']  = '插件菜单';
+            $nodes[$real]['isauth'] = 1;
+            $nodes[$real]['ismenu'] = 1;
+            $nodes[$real]['islogin']= 0;
+        }
         if (!empty($nodes[$real]['isauth'])) {
             return in_array($real, $this->app->session->get('user.nodes', []));
         } else {
