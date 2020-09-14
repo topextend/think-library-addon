@@ -4,7 +4,7 @@
 // |----------------------------------------------------------------------
 // |Date         : 2020-07-08 16:36:17
 // |----------------------------------------------------------------------
-// |LastEditTime : 2020-09-14 08:24:01
+// |LastEditTime : 2020-09-14 08:24:46
 // |----------------------------------------------------------------------
 // |LastEditors  : Jarmin <edshop@qq.com>
 // |----------------------------------------------------------------------
@@ -525,7 +525,7 @@ if (!function_exists('uninstallsql')) {
      * @param string $name 插件名称
      * @return  boolean
      */
-    function uninstallsql($name1)
+    function uninstallsql($name)
     {
         $sqlFile = ADDON_PATH. $name . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'uninstall.sql';
         if (is_file($sqlFile)) {
