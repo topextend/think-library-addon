@@ -336,6 +336,7 @@ class SystemService extends Service
      */
     public function clearRuntime(): void
     {
+        $this->clearCache();
         $data = $this->getRuntime();
         $this->app->console->call('clear');
         $this->setRuntime($data['map'], $data['run'], $data['uri']);
@@ -351,5 +352,23 @@ class SystemService extends Service
         $response = $app->http->run();
         $response->send();
         $app->http->end($response);
+    }
+
+    /**
+     * 清除系统缓存
+     */
+    public function clearCache()
+    {
+        // 清除缓存
+        \think\facade\Cache::clear();
+        // 清除LOG文件
+        $path = glob(RUNTIME_PATH);
+        foreach ($path as $item) {
+            array_map('unlink', glob($item . 'log\*.log'));
+            array_map('unlink', glob($item . 'admin\temp\*.php'));
+            array_map('unlink', glob($item . 'api\temp\*.php'));
+            array_map('unlink', glob($item . 'index\temp\*.php'));
+            rmdir($item. 'log/');
+        }
     }
 }

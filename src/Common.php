@@ -474,7 +474,7 @@ if (!function_exists('get_addons_list')) {
             if(!$class->checkInfo()){
                 continue;
             }
-            $info=$class->info;
+            $info = $class->info;
             $info_file = $addonDir . 'config.php';
             if (!is_file($info_file)){
                 $info['status']=0;
